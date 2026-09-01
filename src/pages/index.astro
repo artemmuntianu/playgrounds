@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ShadowPipelineApp } from '../components/ShadowPipelineApp.tsx';
+---
+
+<BaseLayout>
+  <main class='p-4 md:p-8 max-w-7xl mx-auto'>
+    <ShadowPipelineApp client:load />
+  </main>
+</BaseLayout>
+
