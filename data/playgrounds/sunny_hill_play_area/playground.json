@@ -1,0 +1,39 @@
+{
+  "name": {
+    "en": "Sunny Hill Play Area",
+    "pt": "Área de Lazer Monte Ensolarado"
+  },
+  "short_description": {
+    "en": "Nice hill with swings",
+    "pt": "Bela colina com baloiços"
+  },
+  "full_description": {
+    "en": "",
+    "pt": ""
+  },
+  "latitude": 38.7223,
+  "longitude": -9.1393,
+  "location_name": {
+    "en": "Lisbon, Portugal",
+    "pt": "Lisboa, Portugal"
+  },
+  "photos": [],
+  "thumbnail_photo_id": "",
+  "attributes": {
+    "shadow_coverage": {
+      "en": "High shade",
+      "pt": "Sombra alta"
+    },
+    "surface_temperature": {
+      "en": "Cool (~20°C)",
+      "pt": "Fresco (~20°C)"
+    },
+    "target_age_group": {
+      "en": "All ages",
+      "pt": "Todas as idades"
+    }
+  },
+  "id": "sunny_hill_play_area",
+  "created_at": "2026-09-01T09:18:15.352Z",
+  "updated_at": "2026-09-01T09:18:15.368Z"
+}

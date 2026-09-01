@@ -1,0 +1,13 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { PhotoAnnotationPage } from '../../../components/admin/PhotoAnnotationPage';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+const photo = Astro.url.searchParams.get('photo') || '';
+---
+
+<AdminLayout title="Photo Shadow Annotation | Admin Portal">
+  <PhotoAnnotationPage playgroundId={id || ''} photoId={photo} client:load />
+</AdminLayout>

@@ -1,0 +1,48 @@
+{
+  "id": "clark_v_playground",
+  "name": {
+    "en": "Clark V Playground: Sun and Shade",
+    "pt": "Parque Infantil Clark V: Sol e Sombra"
+  },
+  "short_description": {
+    "en": "Modern playground equipped with slides, climbing structures, and shaded rest zones under tall trees.",
+    "pt": "Parque moderno equipado com escorregas, estruturas de escalada e zonas de descanso à sombra de árvores."
+  },
+  "full_description": {
+    "en": "Clark V Playground features certified safety rubber flooring, multiple slides, and tree canopy providing solar shade during afternoon hours. Ideal for families and toddlers.",
+    "pt": "O Parque Clark V tem pavimento de borracha certificado, vários escorregas e árvores com sombra à tarde. Ideal para famílias e crianças pequenas."
+  },
+  "latitude": 39.7436,
+  "longitude": -8.8071,
+  "location_name": {
+    "en": "Park \"Skazka\" (South District)",
+    "pt": "Parque \"Skazka\" (Distrito Sul)"
+  },
+  "photos": [
+    {
+      "id": "clark_v_1",
+      "filename": "clark_v_1.jpg",
+      "depth_map_filename": "clark_v_1_depth.png",
+      "camera_azimuth_deg": 0,
+      "camera_fov_deg": 65,
+      "scene_id": "clark_v_1_scene"
+    }
+  ],
+  "thumbnail_photo_id": "clark_v_1",
+  "attributes": {
+    "shadow_coverage": {
+      "en": "High shade",
+      "pt": "Sombra alta"
+    },
+    "surface_temperature": {
+      "en": "Cool (~21°C)",
+      "pt": "Fresco (~21°C)"
+    },
+    "target_age_group": {
+      "en": "3-7 years",
+      "pt": "3-7 anos"
+    }
+  },
+  "created_at": "2026-09-01T09:14:47.383Z",
+  "updated_at": "2026-09-01T09:14:47.384Z"
+}

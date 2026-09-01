@@ -1,0 +1,12 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { PlaygroundEditor } from '../../../components/admin/PlaygroundEditor';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+---
+
+<AdminLayout title="Edit Playground | Admin Portal">
+  <PlaygroundEditor playgroundId={id || ''} client:load />
+</AdminLayout>

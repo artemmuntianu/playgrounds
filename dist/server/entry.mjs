@@ -380,6 +380,95 @@ var renderers = [Object.assign({
 		"scripts": [],
 		"styles": [],
 		"routeData": {
+			"route": "/admin/[id]/photos",
+			"isIndex": false,
+			"type": "page",
+			"pattern": "^\\/admin\\/([^/]+?)\\/photos\\/?$",
+			"segments": [
+				[{
+					"content": "admin",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "id",
+					"dynamic": true,
+					"spread": false
+				}],
+				[{
+					"content": "photos",
+					"dynamic": false,
+					"spread": false
+				}]
+			],
+			"params": ["id"],
+			"component": "src/pages/admin/[id]/photos.astro",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/admin/[id]",
+			"isIndex": true,
+			"type": "page",
+			"pattern": "^\\/admin\\/([^/]+?)\\/?$",
+			"segments": [[{
+				"content": "admin",
+				"dynamic": false,
+				"spread": false
+			}], [{
+				"content": "id",
+				"dynamic": true,
+				"spread": false
+			}]],
+			"params": ["id"],
+			"component": "src/pages/admin/[id]/index.astro",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/admin",
+			"isIndex": true,
+			"type": "page",
+			"pattern": "^\\/admin\\/?$",
+			"segments": [[{
+				"content": "admin",
+				"dynamic": false,
+				"spread": false
+			}]],
+			"params": [],
+			"component": "src/pages/admin/index.astro",
+			"pathname": "/admin",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
 			"route": "/api/manifest",
 			"isIndex": false,
 			"type": "endpoint",
@@ -396,6 +485,204 @@ var renderers = [Object.assign({
 			"params": [],
 			"component": "src/pages/api/manifest.ts",
 			"pathname": "/api/manifest",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/api/playgrounds/[id]/photo/[...filename]",
+			"isIndex": false,
+			"type": "endpoint",
+			"pattern": "^\\/api\\/playgrounds\\/([^/]+?)\\/photo(?:\\/(.*?))?\\/?$",
+			"segments": [
+				[{
+					"content": "api",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "playgrounds",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "id",
+					"dynamic": true,
+					"spread": false
+				}],
+				[{
+					"content": "photo",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "...filename",
+					"dynamic": true,
+					"spread": true
+				}]
+			],
+			"params": ["id", "...filename"],
+			"component": "src/pages/api/playgrounds/[id]/photo/[...filename].ts",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/api/playgrounds/[id]/photos",
+			"isIndex": false,
+			"type": "endpoint",
+			"pattern": "^\\/api\\/playgrounds\\/([^/]+?)\\/photos\\/?$",
+			"segments": [
+				[{
+					"content": "api",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "playgrounds",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "id",
+					"dynamic": true,
+					"spread": false
+				}],
+				[{
+					"content": "photos",
+					"dynamic": false,
+					"spread": false
+				}]
+			],
+			"params": ["id"],
+			"component": "src/pages/api/playgrounds/[id]/photos.ts",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/api/playgrounds/[id]/scenes/[photoId]",
+			"isIndex": false,
+			"type": "endpoint",
+			"pattern": "^\\/api\\/playgrounds\\/([^/]+?)\\/scenes\\/([^/]+?)\\/?$",
+			"segments": [
+				[{
+					"content": "api",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "playgrounds",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "id",
+					"dynamic": true,
+					"spread": false
+				}],
+				[{
+					"content": "scenes",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "photoId",
+					"dynamic": true,
+					"spread": false
+				}]
+			],
+			"params": ["id", "photoId"],
+			"component": "src/pages/api/playgrounds/[id]/scenes/[photoId].ts",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/api/playgrounds/[id]",
+			"isIndex": false,
+			"type": "endpoint",
+			"pattern": "^\\/api\\/playgrounds\\/([^/]+?)\\/?$",
+			"segments": [
+				[{
+					"content": "api",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "playgrounds",
+					"dynamic": false,
+					"spread": false
+				}],
+				[{
+					"content": "id",
+					"dynamic": true,
+					"spread": false
+				}]
+			],
+			"params": ["id"],
+			"component": "src/pages/api/playgrounds/[id].ts",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/api/playgrounds",
+			"isIndex": true,
+			"type": "endpoint",
+			"pattern": "^\\/api\\/playgrounds\\/?$",
+			"segments": [[{
+				"content": "api",
+				"dynamic": false,
+				"spread": false
+			}], [{
+				"content": "playgrounds",
+				"dynamic": false,
+				"spread": false
+			}]],
+			"params": [],
+			"component": "src/pages/api/playgrounds/index.ts",
+			"pathname": "/api/playgrounds",
 			"prerender": false,
 			"fallbackRoutes": [],
 			"distURL": [],
@@ -467,6 +754,59 @@ var renderers = [Object.assign({
 		"scripts": [],
 		"styles": [],
 		"routeData": {
+			"route": "/viewer/[id]",
+			"isIndex": false,
+			"type": "page",
+			"pattern": "^\\/viewer\\/([^/]+?)\\/?$",
+			"segments": [[{
+				"content": "viewer",
+				"dynamic": false,
+				"spread": false
+			}], [{
+				"content": "id",
+				"dynamic": true,
+				"spread": false
+			}]],
+			"params": ["id"],
+			"component": "src/pages/viewer/[id].astro",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
+			"route": "/viewer",
+			"isIndex": true,
+			"type": "page",
+			"pattern": "^\\/viewer\\/?$",
+			"segments": [[{
+				"content": "viewer",
+				"dynamic": false,
+				"spread": false
+			}]],
+			"params": [],
+			"component": "src/pages/viewer/index.astro",
+			"pathname": "/viewer",
+			"prerender": false,
+			"fallbackRoutes": [],
+			"distURL": [],
+			"origin": "project",
+			"_meta": { "trailingSlash": "ignore" }
+		}
+	},
+	{
+		"file": "",
+		"links": [],
+		"scripts": [],
+		"styles": [],
+		"routeData": {
 			"route": "/",
 			"isIndex": true,
 			"type": "page",
@@ -486,20 +826,40 @@ var renderers = [Object.assign({
 //#endregion
 //#region \0virtual:astro:pages
 var _page0 = () => import("./chunks/node_CK-1Wvkr.mjs").then((n) => n.t);
-var _page1 = () => import("./chunks/manifest_DIb4R7hB.mjs");
-var _page2 = () => import("./chunks/reconstruct_BhKbwlku.mjs");
-var _page3 = () => import("./chunks/scene_DUuUIehf.mjs");
-var _page4 = () => import("./chunks/index_DhyMejn3.mjs");
+var _page1 = () => import("./chunks/photos_DrSaeOyR.mjs");
+var _page2 = () => import("./chunks/index_B3tqHju2.mjs");
+var _page3 = () => import("./chunks/index_9rmMtMj7.mjs");
+var _page4 = () => import("./chunks/manifest_DIb4R7hB.mjs");
+var _page5 = () => import("./chunks/_.._BfYluMug.mjs");
+var _page6 = () => import("./chunks/photos_BqHGelPe.mjs");
+var _page7 = () => import("./chunks/_photoId__DP-LQmTp.mjs");
+var _page8 = () => import("./chunks/_id__CVaKuFdY.mjs");
+var _page9 = () => import("./chunks/index_re70KQCS.mjs");
+var _page10 = () => import("./chunks/reconstruct_BhKbwlku.mjs");
+var _page11 = () => import("./chunks/scene_DUuUIehf.mjs");
+var _page12 = () => import("./chunks/_id__D9-VBz5g.mjs");
+var _page13 = () => import("./chunks/index_CacQaLuB.mjs");
+var _page14 = () => import("./chunks/index_DsbGKQvB.mjs");
 var pageMap = /* @__PURE__ */ new Map([
 	["node_modules/astro/dist/assets/endpoint/node.js", _page0],
-	["src/pages/api/manifest.ts", _page1],
-	["src/pages/api/reconstruct.ts", _page2],
-	["src/pages/api/scene.ts", _page3],
-	["src/pages/index.astro", _page4]
+	["src/pages/admin/[id]/photos.astro", _page1],
+	["src/pages/admin/[id]/index.astro", _page2],
+	["src/pages/admin/index.astro", _page3],
+	["src/pages/api/manifest.ts", _page4],
+	["src/pages/api/playgrounds/[id]/photo/[...filename].ts", _page5],
+	["src/pages/api/playgrounds/[id]/photos.ts", _page6],
+	["src/pages/api/playgrounds/[id]/scenes/[photoId].ts", _page7],
+	["src/pages/api/playgrounds/[id].ts", _page8],
+	["src/pages/api/playgrounds/index.ts", _page9],
+	["src/pages/api/reconstruct.ts", _page10],
+	["src/pages/api/scene.ts", _page11],
+	["src/pages/viewer/[id].astro", _page12],
+	["src/pages/viewer/index.astro", _page13],
+	["src/pages/index.astro", _page14]
 ]);
 //#endregion
 //#region \0virtual:astro:manifest
-var _manifest = deserializeManifest({"rootDir":"file:///D:/Work/play-model-portal/","cacheDir":"file:///D:/Work/play-model-portal/node_modules/.astro/","outDir":"file:///D:/Work/play-model-portal/dist/","srcDir":"file:///D:/Work/play-model-portal/src/","publicDir":"file:///D:/Work/play-model-portal/public/","buildClientDir":"file:///D:/Work/play-model-portal/dist/client/","buildServerDir":"file:///D:/Work/play-model-portal/dist/server/","adapterName":"@astrojs/node","assetsDir":"_astro","routes":[{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"type":"page","component":"_server-islands.astro","params":["name"],"segments":[[{"content":"_server-islands","dynamic":false,"spread":false}],[{"content":"name","dynamic":true,"spread":false}]],"pattern":"^\\/_server-islands\\/([^/]+?)\\/?$","prerender":false,"isIndex":false,"fallbackRoutes":[],"route":"/_server-islands/[name]","origin":"internal","distURL":[],"_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/_image","component":"node_modules/astro/dist/assets/endpoint/node.js","params":[],"pathname":"/_image","pattern":"^\\/_image\\/?$","segments":[[{"content":"_image","dynamic":false,"spread":false}]],"type":"endpoint","prerender":false,"fallbackRoutes":[],"distURL":[],"isIndex":false,"origin":"internal","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/manifest","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/manifest\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"manifest","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/manifest.ts","pathname":"/api/manifest","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/reconstruct","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/reconstruct\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"reconstruct","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/reconstruct.ts","pathname":"/api/reconstruct","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/scene","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/scene\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"scene","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/scene.ts","pathname":"/api/scene","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/index.Ca0bHpmL.css"}],"routeData":{"route":"/","isIndex":true,"type":"page","pattern":"^\\/$","segments":[],"params":[],"component":"src/pages/index.astro","pathname":"/","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}}],"serverLike":true,"middlewareMode":"classic","base":"/","trailingSlash":"ignore","compressHTML":"jsx","componentMetadata":[["D:/Work/play-model-portal/src/pages/index.astro",{"propagation":"none","containsHead":true}]],"renderers":[],"clientDirectives":[["idle","(()=>{var l=(n,t)=>{let i=async()=>{await(await n())()},e=typeof t.value==\"object\"?t.value:void 0,s={timeout:e==null?void 0:e.timeout};\"requestIdleCallback\"in window?window.requestIdleCallback(i,s):setTimeout(i,s.timeout||200)};(self.Astro||(self.Astro={})).idle=l;window.dispatchEvent(new Event(\"astro:idle\"));})();"],["load","(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).load=e;window.dispatchEvent(new Event(\"astro:load\"));})();"],["media","(()=>{var n=(a,t)=>{let i=async()=>{await(await a())()};if(t.value){let e=matchMedia(t.value);e.matches?i():e.addEventListener(\"change\",i,{once:!0})}};(self.Astro||(self.Astro={})).media=n;window.dispatchEvent(new Event(\"astro:media\"));})();"],["only","(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event(\"astro:only\"));})();"],["visible","(()=>{var a=(s,i,o)=>{let r=async()=>{await(await s())()},t=typeof i.value==\"object\"?i.value:void 0,c={rootMargin:t==null?void 0:t.rootMargin},n=new IntersectionObserver(e=>{for(let l of e)if(l.isIntersecting){n.disconnect(),r();break}},c);for(let e of o.children)n.observe(e)};(self.Astro||(self.Astro={})).visible=a;window.dispatchEvent(new Event(\"astro:visible\"));})();"]],"entryModules":{"\u0000noop-middleware":"virtual_astro_middleware.mjs","\u0000virtual:astro:server-island-manifest":"chunks/_virtual_astro_server-island-manifest_C1Q2srgE.mjs","\u0000virtual:astro:session-driver":"chunks/_virtual_astro_session-driver_DS5V7T-N.mjs","\u0000virtual:astro:actions/noop-entrypoint":"chunks/noop-entrypoint_Z3zFhrGC.mjs","D:/Work/play-model-portal/node_modules/@astrojs/react/dist/vnode-children.js":"chunks/vnode-children_B6vVcKTz.mjs","@astrojs/node/server.js":"entry.mjs","\u0000virtual:astro:page:src/pages/index@_@astro":"chunks/index_DhyMejn3.mjs","\u0000virtual:astro:page:src/pages/api/manifest@_@ts":"chunks/manifest_DIb4R7hB.mjs","\u0000virtual:astro:page:node_modules/astro/dist/assets/endpoint/node@_@js":"chunks/node_CK-1Wvkr.mjs","\u0000virtual:astro:page:src/pages/api/reconstruct@_@ts":"chunks/reconstruct_BhKbwlku.mjs","\u0000virtual:astro:page:src/pages/api/scene@_@ts":"chunks/scene_DUuUIehf.mjs","D:/Work/play-model-portal/node_modules/astro/dist/assets/services/sharp.js":"chunks/sharp_gp5PTzpb.mjs","D:/Work/play-model-portal/src/components/ShadowPipelineApp.tsx":"_astro/ShadowPipelineApp.BE9lpWS1.js","@astrojs/react/client.js":"_astro/client.R9oufefG.js","astro:scripts/before-hydration.js":""},"inlinedScripts":[],"assets":["/ClarkV_depth_map.png","/ClarkV_original.jpg","/_astro/client.R9oufefG.js","/_astro/react.DtVlZneD.js","/_astro/ShadowPipelineApp.BE9lpWS1.js","/_astro/index.Ca0bHpmL.css"],"buildFormat":"directory","checkOrigin":true,"actionBodySizeLimit":1048576,"serverIslandBodySizeLimit":1048576,"allowedDomains":[],"key":"C2D3jbobqlKApEhmCKZYP3KD73xInmGpCjSE+Pfpghk=","sessionConfig":{"driver":"unstorage/drivers/fs-lite","options":{"base":"D:\\Work\\play-model-portal\\node_modules\\.astro\\sessions"}},"image":{},"devToolbar":{"enabled":false,"debugInfoOutput":""},"logLevel":"info","shouldInjectCspMetaTags":false});
+var _manifest = deserializeManifest({"rootDir":"file:///D:/Work/play-model-portal/","cacheDir":"file:///D:/Work/play-model-portal/node_modules/.astro/","outDir":"file:///D:/Work/play-model-portal/dist/","srcDir":"file:///D:/Work/play-model-portal/src/","publicDir":"file:///D:/Work/play-model-portal/public/","buildClientDir":"file:///D:/Work/play-model-portal/dist/client/","buildServerDir":"file:///D:/Work/play-model-portal/dist/server/","adapterName":"@astrojs/node","assetsDir":"_astro","routes":[{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"type":"page","component":"_server-islands.astro","params":["name"],"segments":[[{"content":"_server-islands","dynamic":false,"spread":false}],[{"content":"name","dynamic":true,"spread":false}]],"pattern":"^\\/_server-islands\\/([^/]+?)\\/?$","prerender":false,"isIndex":false,"fallbackRoutes":[],"route":"/_server-islands/[name]","origin":"internal","distURL":[],"_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/_image","component":"node_modules/astro/dist/assets/endpoint/node.js","params":[],"pathname":"/_image","pattern":"^\\/_image\\/?$","segments":[[{"content":"_image","dynamic":false,"spread":false}]],"type":"endpoint","prerender":false,"fallbackRoutes":[],"distURL":[],"isIndex":false,"origin":"internal","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/page-ssr.CTQUBAGW.css"},{"type":"inline","content":"body{font-family:Inter,system-ui,-apple-system,sans-serif}\n"}],"routeData":{"route":"/admin/[id]/photos","isIndex":false,"type":"page","pattern":"^\\/admin\\/([^/]+?)\\/photos\\/?$","segments":[[{"content":"admin","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}],[{"content":"photos","dynamic":false,"spread":false}]],"params":["id"],"component":"src/pages/admin/[id]/photos.astro","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/page-ssr.CTQUBAGW.css"},{"type":"inline","content":"body{font-family:Inter,system-ui,-apple-system,sans-serif}\n"}],"routeData":{"route":"/admin/[id]","isIndex":true,"type":"page","pattern":"^\\/admin\\/([^/]+?)\\/?$","segments":[[{"content":"admin","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}]],"params":["id"],"component":"src/pages/admin/[id]/index.astro","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/page-ssr.CTQUBAGW.css"},{"type":"inline","content":"body{font-family:Inter,system-ui,-apple-system,sans-serif}\n"}],"routeData":{"route":"/admin","isIndex":true,"type":"page","pattern":"^\\/admin\\/?$","segments":[[{"content":"admin","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/admin/index.astro","pathname":"/admin","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/manifest","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/manifest\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"manifest","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/manifest.ts","pathname":"/api/manifest","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/playgrounds/[id]/photo/[...filename]","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/playgrounds\\/([^/]+?)\\/photo(?:\\/(.*?))?\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"playgrounds","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}],[{"content":"photo","dynamic":false,"spread":false}],[{"content":"...filename","dynamic":true,"spread":true}]],"params":["id","...filename"],"component":"src/pages/api/playgrounds/[id]/photo/[...filename].ts","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/playgrounds/[id]/photos","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/playgrounds\\/([^/]+?)\\/photos\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"playgrounds","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}],[{"content":"photos","dynamic":false,"spread":false}]],"params":["id"],"component":"src/pages/api/playgrounds/[id]/photos.ts","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/playgrounds/[id]/scenes/[photoId]","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/playgrounds\\/([^/]+?)\\/scenes\\/([^/]+?)\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"playgrounds","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}],[{"content":"scenes","dynamic":false,"spread":false}],[{"content":"photoId","dynamic":true,"spread":false}]],"params":["id","photoId"],"component":"src/pages/api/playgrounds/[id]/scenes/[photoId].ts","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/playgrounds/[id]","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/playgrounds\\/([^/]+?)\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"playgrounds","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}]],"params":["id"],"component":"src/pages/api/playgrounds/[id].ts","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/playgrounds","isIndex":true,"type":"endpoint","pattern":"^\\/api\\/playgrounds\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"playgrounds","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/playgrounds/index.ts","pathname":"/api/playgrounds","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/reconstruct","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/reconstruct\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"reconstruct","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/reconstruct.ts","pathname":"/api/reconstruct","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[],"routeData":{"route":"/api/scene","isIndex":false,"type":"endpoint","pattern":"^\\/api\\/scene\\/?$","segments":[[{"content":"api","dynamic":false,"spread":false}],[{"content":"scene","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/api/scene.ts","pathname":"/api/scene","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/page-ssr.CTQUBAGW.css"},{"type":"inline","content":"body{-webkit-tap-highlight-color:transparent;font-family:Inter,system-ui,-apple-system,sans-serif}#orientation-overlay[data-astro-cid-qvgevbpa]{display:none}@media screen and (orientation:landscape) and (width<=1024px){#orientation-overlay[data-astro-cid-qvgevbpa]{display:flex!important}}@keyframes rotatePhone{0%,20%{transform:rotate(0)}50%,70%{transform:rotate(-90deg)}90%,to{transform:rotate(0)}}.animate-rotate-phone[data-astro-cid-qvgevbpa]{animation:2.5s ease-in-out infinite rotatePhone}\n"}],"routeData":{"route":"/viewer/[id]","isIndex":false,"type":"page","pattern":"^\\/viewer\\/([^/]+?)\\/?$","segments":[[{"content":"viewer","dynamic":false,"spread":false}],[{"content":"id","dynamic":true,"spread":false}]],"params":["id"],"component":"src/pages/viewer/[id].astro","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/page-ssr.CTQUBAGW.css"},{"type":"inline","content":"body{-webkit-tap-highlight-color:transparent;font-family:Inter,system-ui,-apple-system,sans-serif}#orientation-overlay[data-astro-cid-qvgevbpa]{display:none}@media screen and (orientation:landscape) and (width<=1024px){#orientation-overlay[data-astro-cid-qvgevbpa]{display:flex!important}}@keyframes rotatePhone{0%,20%{transform:rotate(0)}50%,70%{transform:rotate(-90deg)}90%,to{transform:rotate(0)}}.animate-rotate-phone[data-astro-cid-qvgevbpa]{animation:2.5s ease-in-out infinite rotatePhone}\n"}],"routeData":{"route":"/viewer","isIndex":true,"type":"page","pattern":"^\\/viewer\\/?$","segments":[[{"content":"viewer","dynamic":false,"spread":false}]],"params":[],"component":"src/pages/viewer/index.astro","pathname":"/viewer","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}},{"file":"","links":[],"scripts":[],"styles":[{"type":"external","src":"_astro/page-ssr.CTQUBAGW.css"}],"routeData":{"route":"/","isIndex":true,"type":"page","pattern":"^\\/$","segments":[],"params":[],"component":"src/pages/index.astro","pathname":"/","prerender":false,"fallbackRoutes":[],"distURL":[],"origin":"project","_meta":{"trailingSlash":"ignore"}}}],"serverLike":true,"middlewareMode":"classic","base":"/","trailingSlash":"ignore","compressHTML":"jsx","componentMetadata":[["D:/Work/play-model-portal/src/pages/admin/[id]/index.astro",{"propagation":"none","containsHead":true}],["D:/Work/play-model-portal/src/pages/admin/[id]/photos.astro",{"propagation":"none","containsHead":true}],["D:/Work/play-model-portal/src/pages/admin/index.astro",{"propagation":"none","containsHead":true}],["D:/Work/play-model-portal/src/pages/viewer/[id].astro",{"propagation":"none","containsHead":true}],["D:/Work/play-model-portal/src/pages/viewer/index.astro",{"propagation":"none","containsHead":true}]],"renderers":[],"clientDirectives":[["idle","(()=>{var l=(n,t)=>{let i=async()=>{await(await n())()},e=typeof t.value==\"object\"?t.value:void 0,s={timeout:e==null?void 0:e.timeout};\"requestIdleCallback\"in window?window.requestIdleCallback(i,s):setTimeout(i,s.timeout||200)};(self.Astro||(self.Astro={})).idle=l;window.dispatchEvent(new Event(\"astro:idle\"));})();"],["load","(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).load=e;window.dispatchEvent(new Event(\"astro:load\"));})();"],["media","(()=>{var n=(a,t)=>{let i=async()=>{await(await a())()};if(t.value){let e=matchMedia(t.value);e.matches?i():e.addEventListener(\"change\",i,{once:!0})}};(self.Astro||(self.Astro={})).media=n;window.dispatchEvent(new Event(\"astro:media\"));})();"],["only","(()=>{var e=async t=>{await(await t())()};(self.Astro||(self.Astro={})).only=e;window.dispatchEvent(new Event(\"astro:only\"));})();"],["visible","(()=>{var a=(s,i,o)=>{let r=async()=>{await(await s())()},t=typeof i.value==\"object\"?i.value:void 0,c={rootMargin:t==null?void 0:t.rootMargin},n=new IntersectionObserver(e=>{for(let l of e)if(l.isIntersecting){n.disconnect(),r();break}},c);for(let e of o.children)n.observe(e)};(self.Astro||(self.Astro={})).visible=a;window.dispatchEvent(new Event(\"astro:visible\"));})();"]],"entryModules":{"\u0000noop-middleware":"virtual_astro_middleware.mjs","\u0000virtual:astro:server-island-manifest":"chunks/_virtual_astro_server-island-manifest_C1Q2srgE.mjs","\u0000virtual:astro:session-driver":"chunks/_virtual_astro_session-driver_DS5V7T-N.mjs","\u0000virtual:astro:actions/noop-entrypoint":"chunks/noop-entrypoint_Z3zFhrGC.mjs","D:/Work/play-model-portal/node_modules/@astrojs/react/dist/vnode-children.js":"chunks/vnode-children_B6vVcKTz.mjs","@astrojs/node/server.js":"entry.mjs","\u0000virtual:astro:page:src/pages/api/playgrounds/[id]/photo/[...filename]@_@ts":"chunks/_.._BfYluMug.mjs","\u0000virtual:astro:page:src/pages/api/playgrounds/[id]@_@ts":"chunks/_id__CVaKuFdY.mjs","\u0000virtual:astro:page:src/pages/viewer/[id]@_@astro":"chunks/_id__D9-VBz5g.mjs","\u0000virtual:astro:page:src/pages/api/playgrounds/[id]/scenes/[photoId]@_@ts":"chunks/_photoId__DP-LQmTp.mjs","\u0000virtual:astro:page:src/pages/admin/index@_@astro":"chunks/index_9rmMtMj7.mjs","\u0000virtual:astro:page:src/pages/admin/[id]/index@_@astro":"chunks/index_B3tqHju2.mjs","\u0000virtual:astro:page:src/pages/viewer/index@_@astro":"chunks/index_CacQaLuB.mjs","\u0000virtual:astro:page:src/pages/index@_@astro":"chunks/index_DsbGKQvB.mjs","\u0000virtual:astro:page:src/pages/api/playgrounds/index@_@ts":"chunks/index_re70KQCS.mjs","\u0000virtual:astro:page:src/pages/api/manifest@_@ts":"chunks/manifest_DIb4R7hB.mjs","\u0000virtual:astro:page:node_modules/astro/dist/assets/endpoint/node@_@js":"chunks/node_CK-1Wvkr.mjs","\u0000virtual:astro:page:src/pages/api/playgrounds/[id]/photos@_@ts":"chunks/photos_BqHGelPe.mjs","\u0000virtual:astro:page:src/pages/admin/[id]/photos@_@astro":"chunks/photos_DrSaeOyR.mjs","\u0000virtual:astro:page:src/pages/api/reconstruct@_@ts":"chunks/reconstruct_BhKbwlku.mjs","\u0000virtual:astro:page:src/pages/api/scene@_@ts":"chunks/scene_DUuUIehf.mjs","D:/Work/play-model-portal/node_modules/astro/dist/assets/services/sharp.js":"chunks/sharp_gp5PTzpb.mjs","D:/Work/play-model-portal/src/components/admin/PhotoAnnotationPage.tsx":"_astro/PhotoAnnotationPage.CONwMvER.js","D:/Work/play-model-portal/src/components/viewer/PlaygroundCards.tsx":"_astro/PlaygroundCards.tamWk38t.js","D:/Work/play-model-portal/src/components/viewer/PlaygroundDetail.tsx":"_astro/PlaygroundDetail.DpxrG_PT.js","D:/Work/play-model-portal/src/components/admin/PlaygroundEditor.tsx":"_astro/PlaygroundEditor.CqUGsQ5q.js","D:/Work/play-model-portal/src/components/admin/PlaygroundList.tsx":"_astro/PlaygroundList.CY_r2-Jh.js","@astrojs/react/client.js":"_astro/client.R9oufefG.js","astro:scripts/before-hydration.js":""},"inlinedScripts":[],"assets":["/ClarkV_depth_map.png","/ClarkV_original.jpg","/_astro/api.BFfgaZ0D.js","/_astro/client.R9oufefG.js","/_astro/i18n.CprdE3QD.js","/_astro/PhotoAnnotationPage.CONwMvER.js","/_astro/PlaygroundCards.tamWk38t.js","/_astro/PlaygroundDetail.DpxrG_PT.js","/_astro/PlaygroundEditor.CqUGsQ5q.js","/_astro/PlaygroundForm.DcLHDzh8.js","/_astro/PlaygroundList.CY_r2-Jh.js","/_astro/react.DtVlZneD.js","/_astro/shadowRenderer.DeOk-EbZ.js","/_astro/page-ssr.CTQUBAGW.css"],"buildFormat":"directory","checkOrigin":false,"actionBodySizeLimit":1048576,"serverIslandBodySizeLimit":1048576,"allowedDomains":[],"key":"H9gG9UZpnpYdMBVcD+wajdDOQHXhRgGXuUd7v6zt1RQ=","sessionConfig":{"driver":"unstorage/drivers/fs-lite","options":{"base":"D:\\Work\\play-model-portal\\node_modules\\.astro\\sessions"}},"image":{},"devToolbar":{"enabled":false,"debugInfoOutput":""},"logLevel":"info","shouldInjectCspMetaTags":false});
 var manifestRoutes = _manifest.routes;
 var manifest = Object.assign(_manifest, {
 	renderers,

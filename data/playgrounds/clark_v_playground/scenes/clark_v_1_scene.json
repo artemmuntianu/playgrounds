@@ -1,0 +1,66 @@
+{
+  "scene_metadata": {
+    "scene_id": "clark_v_1_scene",
+    "original_image_path": "/api/playgrounds/clark_v_playground/photo/clark_v_1.jpg",
+    "depth_map_path": "/api/playgrounds/clark_v_playground/photo/clark_v_1_depth.png",
+    "camera_azimuth_deg": 0
+  },
+  "annotations": [
+    {
+      "id": "tree_1",
+      "category": "tree",
+      "height_meters": 6.5,
+      "canopy_opacity": 0.85,
+      "ground_anchor": {
+        "x": 0.45,
+        "y": 0.55
+      },
+      "polygon_coordinates": [
+        {
+          "x": 0.42,
+          "y": 0.48
+        },
+        {
+          "x": 0.48,
+          "y": 0.48
+        },
+        {
+          "x": 0.5,
+          "y": 0.53
+        },
+        {
+          "x": 0.4,
+          "y": 0.53
+        }
+      ]
+    },
+    {
+      "id": "slide_structure_1",
+      "category": "structure",
+      "height_meters": 4,
+      "canopy_opacity": 1,
+      "ground_anchor": {
+        "x": 0.65,
+        "y": 0.6
+      },
+      "polygon_coordinates": [
+        {
+          "x": 0.6,
+          "y": 0.55
+        },
+        {
+          "x": 0.7,
+          "y": 0.55
+        },
+        {
+          "x": 0.7,
+          "y": 0.65
+        },
+        {
+          "x": 0.6,
+          "y": 0.65
+        }
+      ]
+    }
+  ]
+}

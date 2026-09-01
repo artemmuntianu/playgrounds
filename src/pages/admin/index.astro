@@ -1,0 +1,8 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { PlaygroundList } from '../../components/admin/PlaygroundList';
+---
+
+<AdminLayout title="Playground Management | Admin Portal">
+  <PlaygroundList client:load />
+</AdminLayout>

@@ -1,0 +1,12 @@
+---
+import ViewerLayout from '../../layouts/ViewerLayout.astro';
+import { PlaygroundDetail } from '../../components/viewer/PlaygroundDetail';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+---
+
+<ViewerLayout title="Playground Details | Mobile Viewer">
+  <PlaygroundDetail playgroundId={id || ''} client:load />
+</ViewerLayout>

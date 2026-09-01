@@ -1,0 +1,92 @@
+---
+interface Props {
+  title?: string;
+  lang?: 'en' | 'pt';
+}
+
+const { title = 'Playground Explorer', lang = 'en' } = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang} class="h-full bg-slate-950">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Landscape Orientation Overlay */
+      #orientation-overlay {
+        display: none;
+      }
+
+      @media screen and (orientation: landscape) and (max-width: 1024px) {
+        #orientation-overlay {
+          display: flex !important;
+        }
+      }
+
+      @keyframes rotatePhone {
+        0%, 20% {
+          transform: rotate(0deg);
+        }
+        50%, 70% {
+          transform: rotate(-90deg);
+        }
+        90%, 100% {
+          transform: rotate(0deg);
+        }
+      }
+
+      .animate-rotate-phone {
+        animation: rotatePhone 2.5s infinite ease-in-out;
+      }
+    </style>
+  </head>
+  <body class="h-full bg-slate-950 flex justify-center">
+    <!-- Landscape Warning Overlay -->
+    <div
+      id="orientation-overlay"
+      class="fixed inset-0 z-[99999] bg-slate-950/95 text-white flex-col items-center justify-center p-8 text-center backdrop-blur-md"
+    >
+      <div class="w-20 h-20 mb-6 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+        <svg
+          class="w-10 h-10 animate-rotate-phone"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          viewBox="0 0 24 24"
+        >
+          <rect x="5" y="2" width="14" height="20" rx="3" ry="3"></rect>
+          <path d="M12 18h.01"></path>
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold mb-2 text-white">Please Rotate Your Phone</h2>
+      <p class="text-sm text-slate-400 max-w-xs mb-4">
+        This app is optimized for portrait view for the best mobile experience.
+      </p>
+      <div class="h-px w-24 bg-slate-800 my-2"></div>
+      <p class="text-xs text-slate-500 max-w-xs italic mt-2">
+        Por favor, rode o telemóvel para a orientação vertical para uma melhor experiência.
+      </p>
+    </div>
+
+    <!-- Mobile Viewport Container -->
+    <div class="w-full max-w-[480px] min-h-full bg-white shadow-2xl flex flex-col relative overflow-x-hidden">
+      <slot />
+    </div>
+  </body>
+</html>
