@@ -35,6 +35,9 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const baseImageRef = useRef<HTMLImageElement | null>(null);
+  const [horizonY, setHorizonY] = useState<number>(200);
+  const [isDraggingHorizon, setIsDraggingHorizon] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Load Depth Map image into offscreen canvas once
   useEffect(() => {
@@ -47,9 +50,15 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
     setLoadingDepth(true);
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.src = depthMapUrl;
+
+    const timeout = setTimeout(() => {
+      console.warn('Depth map load timeout exceeded for:', depthMapUrl);
+      setDepthMapData(null);
+      setLoadingDepth(false);
+    }, 5000);
 
     img.onload = () => {
+      clearTimeout(timeout);
       const offscreen = document.createElement('canvas');
       offscreen.width = img.naturalWidth || img.width;
       offscreen.height = img.naturalHeight || img.height;
@@ -68,10 +77,13 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
     };
 
     img.onerror = () => {
+      clearTimeout(timeout);
       console.warn('Failed to load depth map image from:', depthMapUrl);
       setDepthMapData(null);
       setLoadingDepth(false);
     };
+
+    img.src = depthMapUrl;
   }, [depthMapUrl]);
 
   // Load Base Image once
@@ -80,8 +92,7 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
     img.crossOrigin = 'anonymous';
     img.src = imageUrl;
     img.onload = () => {
-      baseImageRef.current = img;
-      triggerRender();
+      handleImageLoaded(img);
     };
   }, [imageUrl]);
 
@@ -246,7 +257,8 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
 
     // 2. Overlay shadows if sun is above horizon
     if (sol.altitude_deg > 0 && scene.annotations.length > 0) {
-      renderShadows(ctx, w, h, scene.annotations, sol, depthMapData, baseImg);
+      const cameraAzimuth = scene.scene_metadata.camera_azimuth_deg || 0;
+      renderShadows(ctx, w, h, scene.annotations, sol, depthMapData, baseImg, cameraAzimuth, horizonY);
     }
 
     // 3. Draw Schematic Sun Overlay
@@ -308,17 +320,58 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
         </div>
       )}
 
-      {/* Main Canvas Viewport */}
-      <div className="relative flex justify-center items-center bg-gray-900 rounded-lg p-2 overflow-hidden shadow-inner min-h-[400px]">
+      {/* Main Canvas Viewport with Draggable Horizon Line */}
+      <div
+        ref={containerRef}
+        className="relative flex justify-center items-center bg-gray-900 rounded-lg p-2 overflow-hidden shadow-inner min-h-[400px] select-none cursor-crosshair"
+        onMouseMove={(e) => {
+          if (!isDraggingHorizon || !containerRef.current || !baseImageRef.current) return;
+          const rect = containerRef.current.getBoundingClientRect();
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          // Map container mouse Y to canvas coordinate space
+          const scaleY = canvas.height / rect.height;
+          const newY = Math.max(0, Math.min(canvas.height, (e.clientY - rect.top) * scaleY));
+          setHorizonY(Math.round(newY));
+        }}
+        onMouseUp={() => setIsDraggingHorizon(false)}
+        onMouseLeave={() => setIsDraggingHorizon(false)}
+      >
         {loadingDepth && (
           <div className="absolute inset-0 bg-gray-900/70 z-10 flex items-center justify-center text-white text-sm">
             Loading depth map...
           </div>
         )}
-        <canvas
-          ref={canvasRef}
-          className="max-w-full max-h-[700px] h-auto object-contain rounded shadow-lg"
-        />
+        <div className="relative inline-block">
+          <canvas
+            ref={canvasRef}
+            className="max-w-full max-h-[700px] h-auto object-contain rounded shadow-lg block"
+          />
+
+          {/* Draggable Horizon Line Overlay */}
+          {baseImageRef.current && canvasRef.current && (() => {
+            const canvas = canvasRef.current;
+            const displayHeight = canvas.clientHeight;
+            const naturalHeight = canvas.height || 1;
+            const displayHorizonTop = (horizonY / naturalHeight) * displayHeight;
+
+            return (
+              <div
+                className="absolute left-0 right-0 z-20 group cursor-ns-resize flex items-center"
+                style={{ top: `${displayHorizonTop}px`, height: '20px', transform: 'translateY(-50%)' }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setIsDraggingHorizon(true);
+                }}
+              >
+                <div className="w-full border-t-2 border-dashed border-red-500 group-hover:border-red-400 transition shadow-[0_0_4px_rgba(239,68,68,0.8)]"></div>
+                <span className="absolute right-3 bg-red-600 text-white font-mono text-[11px] px-2 py-0.5 rounded shadow-md pointer-events-none">
+                  Horizon Level: {horizonY}px
+                </span>
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Legend & Details */}

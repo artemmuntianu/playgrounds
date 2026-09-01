@@ -1,6 +1,6 @@
 import type { Annotation, Point2D, SolarPosition } from '../types/shadow';
 
-export const METRES_TO_NORM_SCALE = 0.04;
+export const METRES_TO_NORM_SCALE = 0.015;
 
 /**
  * Computes the real-world shadow length L in metres for a given height and sun altitude angle.
@@ -32,7 +32,8 @@ export function projectShadowPolygon(
   solar: SolarPosition,
   _imageWidth: number,
   _imageHeight: number,
-  scale: number = METRES_TO_NORM_SCALE
+  scale: number = METRES_TO_NORM_SCALE,
+  cameraAzimuthDeg: number = 0
 ): Point2D[] {
   if (solar.altitude_deg <= 0) {
     return annotation.polygon_coordinates.map((pt) => ({ ...pt }));
@@ -44,7 +45,19 @@ export function projectShadowPolygon(
   );
   const lengthNorm = lengthMetres * scale;
 
-  const azimuthRad = (solar.azimuth_deg * Math.PI) / 180;
+  // The shadow is cast in the OPPOSITE direction of the sun azimuth (sun vector points from object to sun, shadow vector points from object away from sun).
+  // Shadow direction azimuth = (solar.azimuth_deg + 180) % 360
+  const shadowAzimuthDeg = (solar.azimuth_deg + 180) % 360;
+
+  // Account for camera rotation: relative screen-space shadow direction
+  const relativeAzimuthDeg = (shadowAzimuthDeg - cameraAzimuthDeg + 360) % 360;
+  const azimuthRad = (relativeAzimuthDeg * Math.PI) / 180;
+
+  // In 2D screen space:
+  // - North (0°) -> up (dy = -1, dx = 0)
+  // - East (90°) -> right (dx = 1, dy = 0)
+  // - South (180°) -> down (dy = 1, dx = 0)
+  // - West (270°) -> left (dx = -1, dy = 0)
   const dx = Math.sin(azimuthRad);
   const dy = -Math.cos(azimuthRad);
 
