@@ -10,6 +10,7 @@ interface ViewerShadowCanvasProps {
   latitude: number;
   longitude: number;
   simulatedTimeMinutes: number; // minutes from 00:00 (e.g. 9*60 + 45 = 585 for 09:45)
+  isAdditional?: boolean;
 }
 
 export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
@@ -19,15 +20,16 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   latitude,
   longitude,
   simulatedTimeMinutes,
+  isAdditional = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const baseImageRef = useRef<HTMLImageElement | null>(null);
   const [depthMapData, setDepthMapData] = useState<ImageData | null>(null);
   const [solar, setSolar] = useState<SolarPosition | null>(null);
 
-  // Load Depth Map
+  // Load Depth Map (only if not additional photo)
   useEffect(() => {
-    if (!depthMapUrl) {
+    if (isAdditional || !depthMapUrl) {
       setDepthMapData(null);
       return;
     }
@@ -52,7 +54,7 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
       }
     };
     img.onerror = () => setDepthMapData(null);
-  }, [depthMapUrl]);
+  }, [depthMapUrl, isAdditional]);
 
   // Load Base Image
   useEffect(() => {
@@ -69,7 +71,7 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   // Trigger render when time or scene changes
   useEffect(() => {
     render();
-  }, [simulatedTimeMinutes, scene, latitude, longitude, depthMapData]);
+  }, [simulatedTimeMinutes, scene, latitude, longitude, depthMapData, isAdditional]);
 
   const render = () => {
     const canvas = canvasRef.current;
@@ -98,6 +100,11 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     // 1. Draw base photo
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(baseImg, 0, 0, w, h);
+
+    // If it is an additional photo, we don't render shadows or sun overlay
+    if (isAdditional) {
+      return;
+    }
 
     // 2. Render shadow overlay if sun is up and scene annotations exist
     if (sol.altitude_deg > 0 && scene && scene.annotations.length > 0) {
@@ -154,8 +161,16 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
         />
       )}
 
-      {/* Nighttime Indicator Overlay */}
-      {solar && solar.altitude_deg <= 0 && (
+      {/* Gallery Photo Badge if additional */}
+      {isAdditional && (
+        <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
+          <span>🖼️</span>
+          <span>Gallery Photo</span>
+        </div>
+      )}
+
+      {/* Nighttime Indicator Overlay (only for shadow-enabled photos) */}
+      {!isAdditional && solar && solar.altitude_deg <= 0 && (
         <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-[11px] font-semibold flex items-center gap-1.5 shadow-md">
           <span>🌙</span>
           <span>Nighttime (No sun shadows)</span>

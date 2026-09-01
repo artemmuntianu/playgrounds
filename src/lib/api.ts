@@ -53,10 +53,33 @@ export async function uploadPhoto(
   playgroundId: string,
   photoId: string,
   file: File,
+  options?: {
+    cameraAzimuth?: number;
+    cameraFov?: number;
+    isThumbnail?: boolean;
+    isAdditional?: boolean;
+    depthFile?: File | null;
+  }
 ): Promise<Playground> {
   const form = new FormData();
   form.append('photo_id', photoId);
   form.append('file', file);
+  if (options?.cameraAzimuth !== undefined) {
+    form.append('camera_azimuth_deg', String(options.cameraAzimuth));
+  }
+  if (options?.cameraFov !== undefined) {
+    form.append('camera_fov_deg', String(options.cameraFov));
+  }
+  if (options?.isThumbnail !== undefined) {
+    form.append('is_thumbnail', String(options.isThumbnail));
+  }
+  if (options?.isAdditional !== undefined) {
+    form.append('is_additional', String(options.isAdditional));
+  }
+  if (options?.depthFile) {
+    form.append('depth_file', options.depthFile);
+  }
+
   const res = await fetch(`${BASE}/${playgroundId}/photos`, {
     method: 'POST',
     body: form,
@@ -64,6 +87,26 @@ export async function uploadPhoto(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'Failed to upload photo');
+  }
+  return res.json();
+}
+
+export async function uploadDepthMap(
+  playgroundId: string,
+  photoId: string,
+  depthFile: File
+): Promise<Playground> {
+  const form = new FormData();
+  form.append('photo_id', photoId);
+  form.append('depth_file', depthFile);
+
+  const res = await fetch(`${BASE}/${playgroundId}/depth`, {
+    method: 'POST',
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to upload depth map');
   }
   return res.json();
 }

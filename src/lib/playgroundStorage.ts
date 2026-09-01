@@ -203,8 +203,26 @@ export async function savePlaygroundPhoto(
   fileBuffer: Buffer,
   mimeType: string,
 ): Promise<string> {
-  const ext = mimeType === 'image/png' ? '.png' : '.jpg';
+  const ext = mimeType === 'image/png' ? '.png' : mimeType === 'image/webp' ? '.webp' : '.jpg';
   const filename = `${photoId}${ext}`;
+  const photosDir = path.join(playgroundDir(playgroundId), 'photos');
+  await fs.mkdir(photosDir, { recursive: true });
+  await fs.writeFile(path.join(photosDir, filename), fileBuffer);
+  return filename;
+}
+
+/**
+ * Save a depth map image for a playground photo.
+ * Returns the relative filename (e.g. "photo_1_depth.png").
+ */
+export async function savePlaygroundDepthMap(
+  playgroundId: string,
+  photoId: string,
+  fileBuffer: Buffer,
+  mimeType: string,
+): Promise<string> {
+  const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
+  const filename = `${photoId}_depth${ext}`;
   const photosDir = path.join(playgroundDir(playgroundId), 'photos');
   await fs.mkdir(photosDir, { recursive: true });
   await fs.writeFile(path.join(photosDir, filename), fileBuffer);

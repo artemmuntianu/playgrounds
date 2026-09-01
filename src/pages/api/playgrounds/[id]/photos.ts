@@ -3,6 +3,7 @@ import {
   getPlayground,
   updatePlayground,
   savePlaygroundPhoto,
+  savePlaygroundDepthMap,
   deletePlaygroundPhoto,
 } from '../../../../lib/playgroundStorage';
 import type { PlaygroundPhoto } from '../../../../types/playground';
@@ -26,20 +27,26 @@ export const POST: APIRoute = async ({ params, request }) => {
     );
   }
 
-  if (playground.photos.length >= 4) {
-    return new Response(
-      JSON.stringify({ error: 'Maximum limit of 4 photos reached for this playground' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
+    const depthFile = formData.get('depth_file') as File | null;
     const photoId = (formData.get('photo_id') as string) || `photo_${Date.now()}`;
     const cameraAzimuth = Number(formData.get('camera_azimuth_deg')) || 0;
     const cameraFov = Number(formData.get('camera_fov_deg')) || 65;
     const isThumbnail = formData.get('is_thumbnail') === 'true';
+    const isAdditional = formData.get('is_additional') === 'true';
+
+    // Count existing shadow photos
+    const existingShadowPhotos = playground.photos.filter((p) => !p.is_additional);
+    if (!isAdditional && existingShadowPhotos.length >= 4) {
+      return new Response(
+        JSON.stringify({
+          error: 'Maximum limit of 4 shadow-enabled photos reached. You can still add additional photos.',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!file) {
       return new Response(
@@ -48,6 +55,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       );
     }
 
+    // Save main photo
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const savedFilename = await savePlaygroundPhoto(
@@ -57,12 +65,26 @@ export const POST: APIRoute = async ({ params, request }) => {
       file.type
     );
 
+    // Save optional depth map
+    let savedDepthFilename: string | undefined = undefined;
+    if (depthFile && depthFile.size > 0) {
+      const depthBuffer = Buffer.from(await depthFile.arrayBuffer());
+      savedDepthFilename = await savePlaygroundDepthMap(
+        playgroundId,
+        photoId,
+        depthBuffer,
+        depthFile.type
+      );
+    }
+
     const newPhoto: PlaygroundPhoto = {
       id: photoId,
       filename: savedFilename,
-      camera_azimuth_deg: cameraAzimuth,
-      camera_fov_deg: cameraFov,
-      scene_id: `${photoId}_scene`,
+      depth_map_filename: savedDepthFilename,
+      camera_azimuth_deg: isAdditional ? undefined : cameraAzimuth,
+      camera_fov_deg: isAdditional ? undefined : cameraFov,
+      scene_id: isAdditional ? undefined : `${photoId}_scene`,
+      is_additional: isAdditional,
     };
 
     const updatedPhotos = [...playground.photos, newPhoto];

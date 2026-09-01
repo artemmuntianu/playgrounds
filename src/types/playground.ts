@@ -12,12 +12,14 @@ export interface PlaygroundPhoto {
   filename: string;
   /** Path to the depth map file, e.g. "photos/photo_1_depth.png" (optional) */
   depth_map_filename?: string;
-  /** Camera azimuth in degrees clockwise from North */
-  camera_azimuth_deg: number;
-  /** Camera horizontal FOV in degrees */
-  camera_fov_deg: number;
+  /** Camera azimuth in degrees clockwise from North (for shadow photos) */
+  camera_azimuth_deg?: number;
+  /** Camera horizontal FOV in degrees (for shadow photos) */
+  camera_fov_deg?: number;
   /** Scene annotation ID (matches a .json in scenes/) */
   scene_id?: string;
+  /** True if this is an additional photo without shadow simulation */
+  is_additional?: boolean;
 }
 
 /** Shadow/sun attributes for a playground */
@@ -45,7 +47,7 @@ export interface Playground {
   longitude: number;
   /** Location name for display */
   location_name: LocalizedText;
-  /** Up to 4 photos of the playground */
+  /** All photos of the playground (up to 4 shadow-enabled + additional photos) */
   photos: PlaygroundPhoto[];
   /** ID of the photo used as thumbnail on cards (must be one of photos[].id) */
   thumbnail_photo_id: string;

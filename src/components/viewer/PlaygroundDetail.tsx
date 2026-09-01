@@ -48,9 +48,13 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
             data.photos.find((p) => p.id === data.thumbnail_photo_id) || data.photos[0];
           setActivePhoto(initial);
 
-          // Load scene annotation for this photo
-          const scene = await fetchScene(data.id, initial.id);
-          setActiveScene(scene);
+          // Load scene annotation for this photo if it's shadow enabled
+          if (!initial.is_additional) {
+            const scene = await fetchScene(data.id, initial.id);
+            setActiveScene(scene);
+          } else {
+            setActiveScene(null);
+          }
         }
         setError(null);
       } catch (err: any) {
@@ -66,10 +70,14 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
   const handleSelectPhoto = async (photo: PlaygroundPhoto) => {
     setActivePhoto(photo);
     if (!playground) return;
-    try {
-      const scene = await fetchScene(playground.id, photo.id);
-      setActiveScene(scene);
-    } catch {
+    if (!photo.is_additional) {
+      try {
+        const scene = await fetchScene(playground.id, photo.id);
+        setActiveScene(scene);
+      } catch {
+        setActiveScene(null);
+      }
+    } else {
       setActiveScene(null);
     }
   };
@@ -126,6 +134,8 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
     ? `/api/playgrounds/${playground.id}/photo/${activePhoto.depth_map_filename}`
     : '';
 
+  const isCurrentPhotoAdditional = !!activePhoto?.is_additional;
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50">
       {/* Sticky Header */}
@@ -177,6 +187,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
               latitude={playground.latitude}
               longitude={playground.longitude}
               simulatedTimeMinutes={timeMinutes}
+              isAdditional={isCurrentPhotoAdditional}
             />
           ) : (
             <div className="w-full aspect-[4/3] flex flex-col items-center justify-center text-slate-400 bg-white">
@@ -186,12 +197,20 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
           )}
         </div>
 
-        {/* Thumbnail Gallery (if more than 1 photo) */}
+        {/* Thumbnail Gallery (horizontal scroll of mini thumbnails) */}
         {playground.photos.length > 0 && (
           <div className="bg-white px-4 py-2.5 border-b border-slate-200">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
-              <span>🖼️</span> {t('detail.gallery', lang)} ({playground.photos.length})
+            <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <span>🖼️</span> {t('detail.gallery', lang)} ({playground.photos.length})
+              </span>
+              {isCurrentPhotoAdditional && (
+                <span className="text-[10px] text-indigo-600 font-semibold lowercase">
+                  (gallery photo selected)
+                </span>
+              )}
             </div>
+
             <div className="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">
               {playground.photos.map((photo, i) => {
                 const isSelected = activePhoto?.id === photo.id;
@@ -205,7 +224,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                     className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition active:scale-95 ${
                       isSelected
                         ? 'border-amber-500 ring-2 ring-amber-500/30 scale-105'
-                        : 'border-slate-200 opacity-75 hover:opacity-100'
+                        : 'border-slate-200 opacity-80 hover:opacity-100'
                     }`}
                   >
                     <img
@@ -213,6 +232,9 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                       alt={`Thumbnail ${i + 1}`}
                       className="w-full h-full object-cover"
                     />
+                    <div className="absolute top-0.5 right-0.5 text-[9px]">
+                      {photo.is_additional ? '🖼️' : '☀️'}
+                    </div>
                     <div className="absolute bottom-0 inset-x-0 bg-slate-950/60 text-white text-[9px] font-mono text-center leading-tight py-0.5">
                       #{i + 1}
                     </div>
@@ -260,7 +282,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
             </div>
           </div>
 
-          {/* 3 Attributes Buttons Row (Shadow, Temperature, Age) - No Occupancy as requested */}
+          {/* 3 Attributes Buttons Row (Shadow, Temperature, Age) */}
           <div className="grid grid-cols-3 gap-2 pt-1">
             {/* Shadow Pill */}
             <div className="flex items-center justify-center gap-1 py-2 px-2 rounded-xl bg-amber-400 text-slate-950 font-bold text-xs shadow-sm text-center">
