@@ -2,16 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { SceneAnnotation, SolarPosition } from '../../types/shadow';
 import type { EnvironmentEffects, WeatherSnapshot } from '../../types/environment';
 import { getSolarPosition } from '../../lib/solar';
-import { renderShadows } from '../../lib/shadowRenderer';
-import {
-  computeSunLightTarget,
-  renderSunDisc,
-  renderGroundSunlight,
-  renderObjectSunlight,
-  renderSkyTint,
-} from '../../lib/lighting';
 import { createRainLayer, renderRain, renderWetGround } from '../../lib/rain';
-import { LIGHT_CONFIG, RAIN_CONFIG, CLOUD_CONFIG } from '../../lib/environmentConfig';
+import { RAIN_CONFIG } from '../../lib/environmentConfig';
 import { loadSegmentationMask } from '../../lib/segmentation';
 import { renderSegmentedScene } from '../../lib/segRenderer';
 import type { ShadowCameraParams } from '../../lib/shadowProjection';
@@ -213,8 +205,10 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     };
     if (meta?.horizon_y !== undefined) cameraParams.horizonY = meta.horizon_y;
 
+    // The depth map and semantic mask are always uploaded, so the segmented renderer is the only
+    // path. The guard just waits for the async mask to finish loading (the base photo is already
+    // drawn above); there is no ad-hoc no-mask fallback anymore.
     if (segData) {
-      // Semantic-masked environment: shadows only on the ground, sky + directional light.
       renderSegmentedScene(
         ctx,
         w,
@@ -224,37 +218,10 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
         segData,
         cameraParams,
         depthMapData,
-        cloudCoverPct
+        cloudCoverPct,
+        meta?.sun_light_strength,
+        meta?.sun_sky_glow
       );
-    } else {
-      // Fallback: ad-hoc shadow + light passes (no mask).
-      if (sol.altitude_deg > 0 && scene && scene.annotations.length > 0) {
-        renderShadows(
-          ctx,
-          w,
-          h,
-          scene.annotations,
-          sol,
-          depthMapData,
-          baseImg,
-          meta?.camera_azimuth_deg || 0,
-          meta?.horizon_y,
-          meta?.camera_fov_deg || 65,
-          meta?.camera_pitch_deg
-        );
-      }
-      if (sol.altitude_deg > 0 && scene) {
-        const cameraAzimuthDeg = meta?.camera_azimuth_deg || 0;
-        const cameraFovDeg = meta?.camera_fov_deg || 65;
-        const lightCfg = effects?.light ?? LIGHT_CONFIG;
-        const lt = computeSunLightTarget(sol, cameraAzimuthDeg, cameraFovDeg, w, h, cloudCoverPct);
-        renderObjectSunlight(ctx, w, h, scene.annotations, lt, lightCfg, cloudCoverPct);
-        renderGroundSunlight(ctx, w, h, lt, lightCfg, cloudCoverPct);
-        if (lt.inView) {
-          renderSunDisc(ctx, lt, w, h);
-        }
-      }
-      renderSkyTint(ctx, w, h, sol, cloudCoverPct, effects?.clouds ?? CLOUD_CONFIG);
     }
 
     // Cache the composited static frame (base + shadow + light) so the rain animation can

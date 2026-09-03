@@ -3,13 +3,14 @@ import type { Playground, PlaygroundPhoto } from '../../types/playground';
 import type { SceneAnnotation } from '../../types/shadow';
 import { fetchPlayground, fetchScene } from '../../lib/api';
 import { ViewerShadowCanvas } from './ViewerShadowCanvas';
-import { t, type Locale } from '../../lib/i18n';
+import { t, formatDayLabel, type Locale } from '../../lib/i18n';
 import { getSolarPosition } from '../../lib/solar';
 import {
   useWeather,
   deriveShadePct,
   deriveTempLabel,
   buildEnvironmentEffects,
+  buildDemoWeather,
 } from '../../lib/weather';
 
 interface PlaygroundDetailProps {
@@ -29,13 +30,28 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
   // Time Machine Slider: minutes from midnight (Default 09:45 -> 9*60 + 45 = 585)
   const [timeMinutes, setTimeMinutes] = useState<number>(585);
 
+  // Weather source: live Open-Meteo, or a synthetic demo that forces rain 11:00-12:00.
+  const [weatherMode, setWeatherMode] = useState<'live' | 'demo'>('live');
+
+  // Time Machine day: today (0) up to 6 days forward.
+  const [dayOffset, setDayOffset] = useState(0);
+
+  // Selected day (local), used for the weather API request and the solar position.
+  const selectedDate = new Date();
+  selectedDate.setDate(selectedDate.getDate() + dayOffset);
+  const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+
   // Live weather for the playground location (debounced + cached). Called at the top of the
   // component so it is unconditional (before any early return) — required by the Rules of Hooks.
-  const { weather } = useWeather(
+  const { weather: liveWeather } = useWeather(
     playground?.latitude ?? 0,
     playground?.longitude ?? 0,
-    timeMinutes
+    timeMinutes,
+    selectedDateStr
   );
+
+  // Substitute the live data with a demo snapshot when demo mode is on (rain 11:00-12:00).
+  const weather = weatherMode === 'demo' ? buildDemoWeather(timeMinutes) : liveWeather;
 
   useEffect(() => {
     const stored = localStorage.getItem('pmp_lang') as Locale | null;
@@ -136,6 +152,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
 
   const buildDate = (mins: number): Date => {
     const d = new Date();
+    d.setDate(d.getDate() + dayOffset);
     d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
     return d;
   };
@@ -283,6 +300,34 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
 
         {/* Time Machine & Attributes Controls Box (matches mockup in prompt) */}
         <div className="bg-white p-4 space-y-4 border-b border-slate-200 shadow-sm">
+          {/* Day selector: today .. +6 days */}
+          <div className="w-full">
+            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 text-center">
+              {lang === 'en' ? 'Select Day' : 'Selecionar Dia'}
+            </div>
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {Array.from({ length: 7 }).map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() + i);
+                const active = dayOffset === i;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setDayOffset(i)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {formatDayLabel(d, lang)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Time Machine Header & Current Time Indicator */}
           <div className="flex flex-col items-center space-y-1">
             <div className="flex items-center gap-2">
@@ -314,6 +359,37 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                 <span>16:00</span>
                 <span>18:00</span>
                 <span>20:00</span>
+              </div>
+            </div>
+
+            {/* Weather source override toggle */}
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                Weather:
+              </span>
+              <div className="flex bg-slate-100 p-0.5 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setWeatherMode('live')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                    weatherMode === 'live'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🌐 Live API
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeatherMode('demo')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                    weatherMode === 'demo'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🌧️ Demo (Rain 11-12)
+                </button>
               </div>
             </div>
           </div>

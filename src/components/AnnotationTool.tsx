@@ -23,6 +23,8 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     cameraAzimuth, setCameraAzimuth,
     cameraFov, setCameraFov,
     horizonY, setHorizonY,
+    sunLightStrength, setSunLightStrength,
+    sunSkyGlow, setSunSkyGlow,
     annotations, mode, setMode, activePolygon, setActivePolygon,
     selectedAnnotationId, setSelectedAnnotationId,
     activeGroundBases, setActiveGroundBases,
@@ -91,6 +93,10 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
         setCameraFov={setCameraFov}
         horizonY={horizonY}
         setHorizonY={setHorizonY}
+        sunLightStrength={sunLightStrength}
+        setSunLightStrength={setSunLightStrength}
+        sunSkyGlow={sunSkyGlow}
+        setSunSkyGlow={setSunSkyGlow}
         annotations={annotations}
         selectedAnnotationId={selectedAnnotationId}
         setSelectedAnnotationId={setSelectedAnnotationId}

@@ -104,7 +104,9 @@ function compositeMasked(
   octx.clearRect(0, 0, width, height);
   draw(octx);
   octx.globalCompositeOperation = 'destination-in';
-  octx.drawImage(maskCanvas, 0, 0);
+  // Scale the mask to the canvas size so it always aligns with the base photo, even if the
+  // mask PNG has a different intrinsic resolution than the photo.
+  octx.drawImage(maskCanvas, 0, 0, width, height);
   ctx.save();
   ctx.globalCompositeOperation = blendMode;
   ctx.drawImage(off, 0, 0);
@@ -112,23 +114,61 @@ function compositeMasked(
 }
 
 
-function renderSkyInto(ctx: CanvasRenderingContext2D, w: number, h: number, target: SunLightTarget): void {
-  const warm = clamp(1 - target.altitude_deg / 45, 0, 1);
+/**
+ * Paints the sky gradient + sun glow into an offscreen canvas that will later be clipped to
+ * the sky mask. `cloudCoverPct` darkens and desaturates the gradient toward an overcast
+ * blue-gray so the masked sky reflects the live cloud cover instead of staying a fixed
+ * bright blue.
+ */
+function renderSkyInto(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  target: SunLightTarget,
+  cloudCoverPct: number = 0,
+  glowAlphaPeak: number = 0.55
+): void {
+  const cloud = clamp(cloudCoverPct / 100, 0, 1);
+  // Warmth at the horizon, damped as the sky turns overcast.
+  const warm = clamp(1 - target.altitude_deg / 45, 0, 1) * (1 - cloud);
+  const mix = (a: number, b: number): number => Math.round(a + (b - a) * cloud);
+
+  // Clear-day sky colours: blue at the top, warm at the horizon.
+  const topClear = { r: 110, g: 160, b: 235 };
+  const midClear = { r: 160, g: 190, b: 235 };
+  const bottomClear = { r: 255, g: 200 - warm * 60, b: 150 - warm * 40 };
+
+  // Heavy-overcast targets: darker, desaturated blue-gray.
+  const topOvercast = { r: 88, g: 98, b: 114 };
+  const midOvercast = { r: 110, g: 116, b: 126 };
+  const bottomOvercast = { r: 132, g: 132, b: 132 };
+
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, 'rgb(110, 160, 235)');
-  g.addColorStop(0.7, 'rgb(160, 190, 235)');
-  g.addColorStop(1, `rgb(255, ${Math.round(200 - warm * 60)}, ${Math.round(150 - warm * 40)})`);
+  g.addColorStop(
+    0,
+    `rgb(${mix(topClear.r, topOvercast.r)}, ${mix(topClear.g, topOvercast.g)}, ${mix(topClear.b, topOvercast.b)})`
+  );
+  g.addColorStop(
+    0.7,
+    `rgb(${mix(midClear.r, midOvercast.r)}, ${mix(midClear.g, midOvercast.g)}, ${mix(midClear.b, midOvercast.b)})`
+  );
+  g.addColorStop(
+    1,
+    `rgb(${mix(bottomClear.r, bottomOvercast.r)}, ${mix(bottomClear.g, bottomOvercast.g)}, ${mix(bottomClear.b, bottomOvercast.b)})`
+  );
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
 
+  // Sun glow — a soft, tight warm highlight rather than a white blob; fades as the sky turns
+  // overcast. Alpha is kept low so the 'screen' blend never clips the sky region to pure white.
+  const glowAlpha = clamp(target.intensity, 0, 1) * (1 - cloud * 0.6);
   const cx = clamp(target.screenX, 0, w);
   const cy = clamp(target.screenY, 0, h);
-  const rad = Math.max(w, h) * 0.3;
-  const a = clamp(target.intensity, 0, 1);
+  const rad = Math.max(w, h) * 0.26;
   const { r, g: g2, b } = target.color;
   const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
-  glow.addColorStop(0, `rgba(${r},${g2},${b},${0.8 * a})`);
-  glow.addColorStop(0.4, `rgba(${r},${g2},${b},${0.3 * a})`);
+  glow.addColorStop(0, `rgba(${r},${g2},${b},${glowAlphaPeak * glowAlpha})`);
+  glow.addColorStop(0.3, `rgba(${r},${g2},${b},${glowAlphaPeak * 0.4 * glowAlpha})`);
   glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
@@ -182,7 +222,9 @@ export function renderSegmentedScene(
   seg: SegmentationData,
   cameraParams: ShadowCameraParams,
   depthMapData?: ImageData | null,
-  cloudCoverPct: number = 0
+  cloudCoverPct: number = 0,
+  sunLightStrength?: number,
+  sunGlowAlpha?: number
 ): void {
   const target = computeSunLightTarget(
     solar,
@@ -190,7 +232,8 @@ export function renderSegmentedScene(
     cameraParams.cameraFovDeg ?? 65,
     width,
     height,
-    cloudCoverPct
+    cloudCoverPct,
+    sunLightStrength
   );
 
   const groundMask = getMask(seg, 'ground');
@@ -207,7 +250,7 @@ export function renderSegmentedScene(
   );
 
   if (target.altitude_deg > 0) {
-    compositeMasked(ctx, width, height, (octx) => renderSkyInto(octx, width, height, target), skyMask, 'source-over');
+    compositeMasked(ctx, width, height, (octx) => renderSkyInto(octx, width, height, target, cloudCoverPct, sunGlowAlpha), skyMask, 'source-over');
     compositeMasked(ctx, width, height, (octx) => renderGroundDirectInto(octx, width, height, target), groundMask, 'screen');
     if (annotations.length > 0) {
       compositeMasked(ctx, width, height, (octx) => renderVerticalLightInto(octx, width, height, target), verticalMask, 'screen');

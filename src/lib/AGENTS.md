@@ -48,12 +48,11 @@ Types live in `../types/shadow.ts` (`Point2D`, `Annotation`,
   canvas. Passes `scene.scene_metadata.camera_azimuth_deg`, `horizon_y`,
   `camera_fov_deg` and `camera_pitch_deg`. Accepts optional `weather` and `effects`
   props (from `../../lib/weather`) to drive cloud cover, rain and lighting.
-- `../components/ShadowPreview.tsx` — annotation preview. Same metadata, plus a
-  draggable horizon line whose value (fraction or pixel row) is passed live. Uses the
-  shared `computeSunLightTarget` + `renderSunDisc`.
 
-Both call sites are also the only ones allowed to invoke the new `render*` functions
-(`lighting.ts`, `rain.ts`, `clouds.ts`). `renderShadows` itself is unchanged.
+`ShadowPreview.tsx` / `ShadowPipelineApp.tsx` were removed. The public viewer is the
+**single renderer / single source of truth** and the only call site allowed to invoke
+`renderShadows` and the new `render*` functions (`lighting.ts`, `rain.ts`, `clouds.ts`,
+`segRenderer.ts`). `renderShadows` itself is unchanged.
 
 ## Camera model (derived from user parameters)
 

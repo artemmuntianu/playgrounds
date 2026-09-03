@@ -98,7 +98,7 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
               required
               value={nameEn}
               onChange={(e) => setNameEn(e.target.value)}
-              placeholder="e.g. Clark V Adventure Park"
+              placeholder="e.g. Sunrise Meadows Adventure Park"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>
@@ -110,7 +110,7 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
               type="text"
               value={namePt}
               onChange={(e) => setNamePt(e.target.value)}
-              placeholder="e.g. Parque de Aventuras Clark V"
+              placeholder="e.g. Parque de Aventuras Sunrise Meadows"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
           </div>

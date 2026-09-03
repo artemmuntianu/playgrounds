@@ -28,10 +28,11 @@ export function getWeatherCacheKey(lat: number, lon: number, date: string): stri
 export async function fetchWeatherDay(
   lat: number,
   lon: number,
-  opts?: { useFixture?: boolean }
+  opts?: { useFixture?: boolean; date?: string }
 ): Promise<WeatherDayHourly> {
   const query = new URLSearchParams({ lat: String(lat), lon: String(lon) });
   if (opts?.useFixture) query.set('useFixture', '1');
+  if (opts?.date) query.set('date', opts.date);
   const res = await fetch(`${BASE}?${query.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch weather');
   return res.json();
@@ -57,11 +58,12 @@ export function selectWeatherAt(day: WeatherDayHourly, minutes: number): Weather
   };
 }
 
-/** React hook: debounced, cached, single-flight fetch of the current hour's weather. */
+/** React hook: debounced, cached, single-flight fetch of the weather for a given day+hour. */
 export function useWeather(
   lat: number,
   lon: number,
   minutes: number,
+  date?: string,
   opts?: { useFixture?: boolean }
 ): { weather: WeatherSnapshot | null; loading: boolean; error: string | null } {
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
@@ -77,7 +79,7 @@ export function useWeather(
 
     const timer = setTimeout(async () => {
       try {
-        const dateKey = new Date().toISOString().slice(0, 10);
+        const dateKey = date || new Date().toISOString().slice(0, 10);
         const key = getWeatherCacheKey(lat, lon, dateKey);
 
         const cached = cache.get(key);
@@ -92,7 +94,7 @@ export function useWeather(
 
         let promise = inFlight.get(key);
         if (!promise) {
-          promise = fetchWeatherDay(lat, lon, optsRef.current);
+          promise = fetchWeatherDay(lat, lon, { useFixture: optsRef.current?.useFixture, date });
           inFlight.set(key, promise);
           promise.finally(() => inFlight.delete(key));
         }
@@ -115,7 +117,7 @@ export function useWeather(
     }, WEATHER_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [lat, lon, minutes]);
+  }, [lat, lon, minutes, date]);
 
   return { weather, loading, error };
 }
@@ -140,6 +142,23 @@ export function deriveTempLabel(weather: WeatherSnapshot): { en: string; pt: str
   if (t <= 22) return { en: `Mild (~${t}°C)`, pt: `Suave (~${t}°C)` };
   if (t <= 30) return { en: `Warm (~${t}°C)`, pt: `Quente (~${t}°C)` };
   return { en: `Hot (~${t}°C)`, pt: `Muito quente (~${t}°C)` };
+}
+
+/**
+ * Synthetic demo weather that overrides the live API data. Produces rain strictly between
+ * 11:00 and 12:00 (minutes 660..720) so the viewer can preview the rain pipeline without a
+ * real rainy hour from Open-Meteo.
+ */
+export function buildDemoWeather(minutes: number): WeatherSnapshot {
+  const inRain = minutes >= 11 * 60 && minutes < 12 * 60;
+  return {
+    temperature_c: inRain ? 17 : 22,
+    cloud_cover_pct: inRain ? 95 : 40,
+    precipitation_mm: inRain ? 3.2 : 0,
+    weather_code: inRain ? 61 : 2,
+    wind_speed_kmh: inRain ? 22 : 8,
+    is_day: true,
+  };
 }
 
 /** Builds an EnvironmentEffects object from the current weather snapshot. */

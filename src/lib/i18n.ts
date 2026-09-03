@@ -65,3 +65,14 @@ export function t(
   }
   return text;
 }
+
+const MONTH_ABBR: Record<Locale, string[]> = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  pt: ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+};
+
+/** Formats a date like "Aug 3" (EN) or "3 ago" (PT). */
+export function formatDayLabel(date: Date, locale: Locale): string {
+  const month = MONTH_ABBR[locale][date.getMonth()] ?? '';
+  return locale === 'pt' ? `${date.getDate()} ${month}` : `${month} ${date.getDate()}`;
+}

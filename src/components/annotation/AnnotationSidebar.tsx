@@ -22,6 +22,10 @@ interface AnnotationSidebarProps {
   setCameraFov: (v: number) => void;
   horizonY: number;
   setHorizonY: (v: number) => void;
+  sunLightStrength: number;
+  setSunLightStrength: (v: number) => void;
+  sunSkyGlow: number;
+  setSunSkyGlow: (v: number) => void;
   annotations: Annotation[];
   selectedAnnotationId: string | null;
   setSelectedAnnotationId: React.Dispatch<React.SetStateAction<string | null>>;
@@ -49,6 +53,10 @@ export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
   setCameraFov,
   horizonY,
   setHorizonY,
+  sunLightStrength,
+  setSunLightStrength,
+  sunSkyGlow,
+  setSunSkyGlow,
   annotations,
   selectedAnnotationId,
   setSelectedAnnotationId,
@@ -191,6 +199,46 @@ export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
             onChange={(e) => setHorizonY(Number(e.target.value))}
             className="w-full mt-1 px-2.5 py-1 text-sm border border-gray-300 rounded"
           />
+        </div>
+
+        {/* Lighting tuning knobs (override per-photo for photos with different base brightness) */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label
+              className="block text-xs font-semibold text-gray-600"
+              title="Overall sun-light strength (0..1). Lower it if the photo renders too bright / washed out."
+            >
+              Sun Light:
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={sunLightStrength}
+              onChange={(e) => setSunLightStrength(Number(e.target.value))}
+              className="w-full mt-1 accent-indigo-600"
+            />
+            <div className="text-[10px] text-gray-500 text-right">{sunLightStrength.toFixed(2)}</div>
+          </div>
+          <div>
+            <label
+              className="block text-xs font-semibold text-gray-600"
+              title="Peak sun glow in the sky (0..1). Lower it to tame a white hotspot around the sun."
+            >
+              Sky Glow:
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={sunSkyGlow}
+              onChange={(e) => setSunSkyGlow(Number(e.target.value))}
+              className="w-full mt-1 accent-indigo-600"
+            />
+            <div className="text-[10px] text-gray-500 text-right">{sunSkyGlow.toFixed(2)}</div>
+          </div>
         </div>
       </div>
 

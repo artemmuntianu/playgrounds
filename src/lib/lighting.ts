@@ -5,6 +5,11 @@ import { computeSunScreenInfo } from './sunOverlay';
 
 const DEG_TO_RAD = Math.PI / 180;
 
+// Default cap for the sun-light so the additive 'screen' passes produce a soft, warm highlight
+// instead of clipping the photo to pure white at a clear high sun. Can be overridden per photo
+// via scene_metadata.sun_light_strength.
+const MAX_SUN_INTENSITY = 0.8;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -20,16 +25,18 @@ export function computeSunLightTarget(
   cameraFovDeg: number,
   width: number,
   height: number,
-  cloudCoverPct: number = 0
+  cloudCoverPct: number = 0,
+  maxIntensity: number = MAX_SUN_INTENSITY
 ): SunLightTarget {
   const info = computeSunScreenInfo(solar, cameraAzimuthDeg, cameraFovDeg, width, height);
 
   const t = clamp(solar.altitude_deg / 45, 0, 1); // 0 low sun, 1 high sun
-  const intensity = t * cloudDimFactor(cloudCoverPct);
+  const intensity = t * cloudDimFactor(cloudCoverPct) * clamp(maxIntensity, 0, 1);
+  // Slightly warm near the zenith so the highlight reads as sunlight, not a white blob.
   const color = {
     r: 255,
-    g: Math.round(180 + 75 * t),
-    b: Math.round(60 + 195 * t),
+    g: Math.round(170 + 70 * t),
+    b: Math.round(70 + 170 * t),
   };
 
   return {

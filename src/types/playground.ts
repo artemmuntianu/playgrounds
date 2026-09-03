@@ -36,7 +36,7 @@ export interface PlaygroundAttributes {
 
 /** Full playground entity stored in the file system */
 export interface Playground {
-  /** Unique slug ID, e.g. "clark_v_playground" (lowercase, underscores only) */
+  /** Unique slug ID, e.g. "sunrise_meadows_playground" (lowercase, underscores only) */
   id: string;
   /** Display name */
   name: LocalizedText;

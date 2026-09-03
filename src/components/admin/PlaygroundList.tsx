@@ -53,37 +53,6 @@ export const PlaygroundList: React.FC = () => {
     }
   };
 
-  // Quick Seed preset: Clark V Playground
-  const handleSeedClarkV = async () => {
-    try {
-      setIsSubmitting(true);
-      const created = await createPlayground({
-        name: { en: 'Clark V Playground', pt: 'Parque Infantil Clark V' },
-        short_description: {
-          en: 'A sunny modern playground with climbing frames, slides and tall shade trees.',
-          pt: 'Um parque moderno com estruturas de escalada, escorregas e árvores com sombra.',
-        },
-        full_description: {
-          en: 'Clark V Playground features certified safety rubber flooring, multiple slides, and tree canopy providing solar shade during afternoon hours.',
-          pt: 'O Parque Clark V tem pavimento de borracha certificado, vários escorregas e árvores com sombra à tarde.',
-        },
-        location_name: { en: 'Leiria Central Park, Portugal', pt: 'Parque Central de Leiria, Portugal' },
-        latitude: 39.7436,
-        longitude: -8.8071,
-        attributes: {
-          shadow_coverage: { en: 'High shade', pt: 'Sombra alta' },
-          surface_temperature: { en: 'Cool (~22°C)', pt: 'Fresco (~22°C)' },
-          target_age_group: { en: '3-7 years', pt: '3-7 anos' },
-        },
-      });
-      window.location.href = `/admin/${created.id}`;
-    } catch (err: any) {
-      alert(`Failed to seed playground: ${err.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Top Banner / Actions Bar */}
@@ -98,17 +67,6 @@ export const PlaygroundList: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {playgrounds.length === 0 && (
-            <button
-              type="button"
-              onClick={handleSeedClarkV}
-              disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl transition shadow-sm"
-            >
-              ⚡ Quick Seed Clark V Preset
-            </button>
-          )}
-
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
@@ -138,13 +96,6 @@ export const PlaygroundList: React.FC = () => {
             Get started by creating a new playground dataset, uploading photos, and annotating shadow casters.
           </p>
           <div className="pt-2 flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={handleSeedClarkV}
-              className="px-5 py-2.5 text-xs font-bold text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-xl transition"
-            >
-              ⚡ Add Clark V Playground Preset
-            </button>
             <button
               type="button"
               onClick={() => setShowCreateModal(true)}

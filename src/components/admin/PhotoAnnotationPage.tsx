@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import type { Playground, PlaygroundPhoto } from '../../types/playground';
 import type { SceneAnnotation } from '../../types/shadow';
 import { AnnotationTool } from '../AnnotationTool';
-import { ShadowPreview } from '../ShadowPreview';
 import { fetchPlayground, fetchScene, savePlaygroundSceneApi } from '../../lib/api';
 
 interface PhotoAnnotationPageProps {
@@ -19,7 +18,6 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
   const [scene, setScene] = useState<SceneAnnotation | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'annotate' | 'preview'>('annotate');
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,7 +70,6 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
       setScene(savedScene);
       setSaveStatus('Annotations saved successfully!');
       setTimeout(() => setSaveStatus(null), 3000);
-      setActiveView('preview');
     } catch (err: any) {
       alert(`Save error: ${err.message}`);
       setSaveStatus(null);
@@ -122,38 +119,13 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
             <span className="text-xs font-mono font-bold text-slate-500">{photo.id}</span>
           </div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight mt-1">
-            Shadow Annotation & Solar Simulation
+            Shadow Annotation
           </h2>
           <p className="text-xs text-slate-500">
             Draw polygons around trees and play structures to cast dynamic time-based shadows.
           </p>
         </div>
 
-        {/* View Toggle Buttons */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
-          <button
-            type="button"
-            onClick={() => setActiveView('annotate')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
-              activeView === 'annotate'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            ✏️ 1. Annotate Objects
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveView('preview')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
-              activeView === 'preview'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            ☀️ 2. Solar Simulation Preview
-          </button>
-        </div>
       </div>
 
       {saveStatus && (
@@ -163,29 +135,24 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
       )}
 
       {/* Main Workspace */}
-      {activeView === 'annotate' && (
-        <div className="space-y-4">
-          <AnnotationTool
-            imageUrl={imageUrl}
-            depthMapUrl={depthMapUrl}
-            onSave={handleSaveScene}
-            initialScene={scene || undefined}
-          />
-        </div>
-      )}
+      <div className="space-y-4">
+        <AnnotationTool
+          imageUrl={imageUrl}
+          depthMapUrl={depthMapUrl}
+          onSave={handleSaveScene}
+          initialScene={scene || undefined}
+        />
+      </div>
 
-      {activeView === 'preview' && scene && (
-        <div className="space-y-4">
-          <ShadowPreview
-            imageUrl={imageUrl}
-            depthMapUrl={depthMapUrl}
-            scene={scene}
-            latitude={playground.latitude}
-            longitude={playground.longitude}
-            onSave={handleSaveScene}
-          />
-        </div>
-      )}
+      {/* The final render is always the public viewer — single source of truth. */}
+      <div className="pt-2">
+        <a
+          href={`/viewer/${playgroundId}`}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800"
+        >
+          👁️ View Final Result in Viewer →
+        </a>
+      </div>
     </div>
   );
 };

@@ -26,6 +26,12 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
   const [horizonY, setHorizonY] = useState<number>(
     initialScene?.scene_metadata.horizon_y ?? 0.35
   );
+  const [sunLightStrength, setSunLightStrength] = useState<number>(
+    initialScene?.scene_metadata.sun_light_strength ?? 0.8
+  );
+  const [sunSkyGlow, setSunSkyGlow] = useState<number>(
+    initialScene?.scene_metadata.sun_sky_glow ?? 0.55
+  );
   const [annotations, setAnnotations] = useState<Annotation[]>(
     initialScene?.annotations || []
   );
@@ -535,6 +541,8 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
         camera_azimuth_deg: Number(cameraAzimuth),
         camera_fov_deg: Number(cameraFov),
         horizon_y: Number(horizonY),
+        sun_light_strength: Number(sunLightStrength),
+        sun_sky_glow: Number(sunSkyGlow),
       },
       annotations,
     };
@@ -545,6 +553,8 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     cameraAzimuth, setCameraAzimuth,
     cameraFov, setCameraFov,
     horizonY, setHorizonY,
+    sunLightStrength, setSunLightStrength,
+    sunSkyGlow, setSunSkyGlow,
     annotations, setAnnotations,
     mode, setMode,
     activePolygon, setActivePolygon,

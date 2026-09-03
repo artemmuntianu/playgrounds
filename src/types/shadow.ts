@@ -37,6 +37,16 @@ export interface SceneAnnotation {
     camera_fov_deg?: number;      // horizontal field of view in degrees (default ~65)
     camera_pitch_deg?: number;    // camera tilt relative to horizon (default ~0)
     horizon_y?: number;           // Y-coordinate of the horizon line in pixels
+    /**
+     * Operator tuning knob (0..1, default 0.8): overall strength of the sun light. Lower it
+     * when a photo is originally too bright / the sunlight washes it out.
+     */
+    sun_light_strength?: number;
+    /**
+     * Operator tuning knob (0..1, default 0.55): peak alpha of the sun glow in the sky.
+     * Lower it to tame a blown-out white hotspot around the sun.
+     */
+    sun_sky_glow?: number;
   };
   annotations: Annotation[];
 }

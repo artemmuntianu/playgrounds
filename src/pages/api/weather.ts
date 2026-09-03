@@ -48,6 +48,13 @@ export const GET: APIRoute = async ({ url }) => {
       timezone: 'auto',
     });
 
+    // Optional specific forecast day (YYYY-MM-DD) — defaults to today.
+    const date = url.searchParams.get('date');
+    if (date) {
+      params.set('start_date', date);
+      params.set('end_date', date);
+    }
+
     const res = await fetch(`${base}?${params.toString()}`);
     if (!res.ok) {
       throw new Error(`Open-Meteo responded with ${res.status}`);
