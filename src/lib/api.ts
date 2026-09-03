@@ -59,6 +59,7 @@ export async function uploadPhoto(
     isThumbnail?: boolean;
     isAdditional?: boolean;
     depthFile?: File | null;
+    segMaskFile?: File | null;
   }
 ): Promise<Playground> {
   const form = new FormData();
@@ -78,6 +79,9 @@ export async function uploadPhoto(
   }
   if (options?.depthFile) {
     form.append('depth_file', options.depthFile);
+  }
+  if (options?.segMaskFile) {
+    form.append('seg_mask_file', options.segMaskFile);
   }
 
   const res = await fetch(`${BASE}/${playgroundId}/photos`, {

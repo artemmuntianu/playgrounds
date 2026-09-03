@@ -1,31 +1,108 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { SceneAnnotation, SolarPosition } from '../../types/shadow';
+import type { EnvironmentEffects, WeatherSnapshot } from '../../types/environment';
 import { getSolarPosition } from '../../lib/solar';
 import { renderShadows } from '../../lib/shadowRenderer';
+import {
+  computeSunLightTarget,
+  renderSunDisc,
+  renderGroundSunlight,
+  renderObjectSunlight,
+  renderSkyTint,
+} from '../../lib/lighting';
+import { createRainLayer, renderRain, renderWetGround } from '../../lib/rain';
+import { LIGHT_CONFIG, RAIN_CONFIG, CLOUD_CONFIG } from '../../lib/environmentConfig';
+import { loadSegmentationMask } from '../../lib/segmentation';
+import { renderSegmentedScene } from '../../lib/segRenderer';
+import type { ShadowCameraParams } from '../../lib/shadowProjection';
+import type { SegmentationData } from '../../types/segmentation';
 
 interface ViewerShadowCanvasProps {
   imageUrl: string;
   depthMapUrl?: string;
+  segMaskUrl?: string;
   scene?: SceneAnnotation | null;
   latitude: number;
   longitude: number;
   simulatedTimeMinutes: number; // minutes from 00:00 (e.g. 9*60 + 45 = 585 for 09:45)
   isAdditional?: boolean;
+  weather?: WeatherSnapshot | null;
+  effects?: EnvironmentEffects;
 }
 
 export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   imageUrl,
   depthMapUrl,
+  segMaskUrl,
   scene,
   latitude,
   longitude,
   simulatedTimeMinutes,
   isAdditional = false,
+  weather,
+  effects,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const baseImageRef = useRef<HTMLImageElement | null>(null);
   const [depthMapData, setDepthMapData] = useState<ImageData | null>(null);
   const [solar, setSolar] = useState<SolarPosition | null>(null);
+  const [segData, setSegData] = useState<SegmentationData | null>(null);
+
+  // Rain / static-frame cache for the animation loop.
+  const staticCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rainLayerRef = useRef<HTMLCanvasElement | null>(null);
+  const rainLayerSeedRef = useRef<number | null>(null);
+  const rainOffsetRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const lastRainFrameRef = useRef(0);
+
+  const startRainAnimation = (w: number, h: number) => {
+    if (rafRef.current !== null) return;
+    const seed = effects?.rain.seed ?? RAIN_CONFIG.seed;
+    if (rainLayerSeedRef.current !== seed || !rainLayerRef.current) {
+      rainLayerRef.current = createRainLayer(w, h, seed, effects?.rain ?? RAIN_CONFIG);
+      rainLayerSeedRef.current = seed;
+    }
+    lastRainFrameRef.current = performance.now();
+    const loop = (now: number) => {
+      const dt = (now - lastRainFrameRef.current) / 1000;
+      lastRainFrameRef.current = now;
+      rainOffsetRef.current +=
+        (effects?.rain.speedPxPerSec ?? RAIN_CONFIG.speedPxPerSec) * dt;
+      const canvas = canvasRef.current;
+      const staticC = staticCanvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (canvas && staticC && ctx) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(staticC, 0, 0, w, h);
+        renderRain(
+          ctx,
+          w,
+          h,
+          rainLayerRef.current!,
+          rainOffsetRef.current,
+          effects?.rain ?? RAIN_CONFIG
+        );
+        renderWetGround(ctx, w, h, weather?.precipitation_mm ?? 0, effects?.rain ?? RAIN_CONFIG);
+      }
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+  };
+
+  const stopRainAnimation = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    const canvas = canvasRef.current;
+    const staticC = staticCanvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && staticC && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(staticC, 0, 0, canvas.width, canvas.height);
+    }
+  };
 
   // Load Depth Map (only if not additional photo)
   useEffect(() => {
@@ -56,6 +133,26 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     img.onerror = () => setDepthMapData(null);
   }, [depthMapUrl, isAdditional]);
 
+  // Load Semantic Segmentation Mask (3-colour sky/vertical/ground)
+  useEffect(() => {
+    if (isAdditional || !segMaskUrl) {
+      setSegData(null);
+      return;
+    }
+    let cancelled = false;
+    loadSegmentationMask(segMaskUrl)
+      .then((seg) => {
+        if (!cancelled) setSegData(seg);
+      })
+      .catch((err) => {
+        console.warn('Failed to load segmentation mask:', err);
+        if (!cancelled) setSegData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [segMaskUrl, isAdditional]);
+
   // Load Base Image
   useEffect(() => {
     if (!imageUrl) return;
@@ -71,7 +168,7 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   // Trigger render when time or scene changes
   useEffect(() => {
     render();
-  }, [simulatedTimeMinutes, scene, latitude, longitude, depthMapData, isAdditional]);
+  }, [simulatedTimeMinutes, scene, latitude, longitude, depthMapData, isAdditional, weather, effects, segData]);
 
   const render = () => {
     const canvas = canvasRef.current;
@@ -97,6 +194,8 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const cloudCoverPct = effects?.clouds.cloudCoverPct ?? weather?.cloud_cover_pct ?? 0;
+
     // 1. Draw base photo
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(baseImg, 0, 0, w, h);
@@ -106,60 +205,76 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
       return;
     }
 
-    // 2. Render shadow overlay if sun is up and scene annotations exist
-    if (sol.altitude_deg > 0 && scene && scene.annotations.length > 0) {
-      const meta = scene.scene_metadata;
-      renderShadows(
+    const meta = scene?.scene_metadata;
+    const cameraParams: ShadowCameraParams = {
+      cameraAzimuthDeg: meta?.camera_azimuth_deg ?? 0,
+      cameraFovDeg: meta?.camera_fov_deg ?? 65,
+      cameraPitchDeg: meta?.camera_pitch_deg,
+    };
+    if (meta?.horizon_y !== undefined) cameraParams.horizonY = meta.horizon_y;
+
+    if (segData) {
+      // Semantic-masked environment: shadows only on the ground, sky + directional light.
+      renderSegmentedScene(
         ctx,
         w,
         h,
-        scene.annotations,
+        scene?.annotations ?? [],
         sol,
+        segData,
+        cameraParams,
         depthMapData,
-        baseImg,
-        meta.camera_azimuth_deg || 0,
-        meta.horizon_y,
-        meta.camera_fov_deg || 65,
-        meta.camera_pitch_deg
+        cloudCoverPct
       );
+    } else {
+      // Fallback: ad-hoc shadow + light passes (no mask).
+      if (sol.altitude_deg > 0 && scene && scene.annotations.length > 0) {
+        renderShadows(
+          ctx,
+          w,
+          h,
+          scene.annotations,
+          sol,
+          depthMapData,
+          baseImg,
+          meta?.camera_azimuth_deg || 0,
+          meta?.horizon_y,
+          meta?.camera_fov_deg || 65,
+          meta?.camera_pitch_deg
+        );
+      }
+      if (sol.altitude_deg > 0 && scene) {
+        const cameraAzimuthDeg = meta?.camera_azimuth_deg || 0;
+        const cameraFovDeg = meta?.camera_fov_deg || 65;
+        const lightCfg = effects?.light ?? LIGHT_CONFIG;
+        const lt = computeSunLightTarget(sol, cameraAzimuthDeg, cameraFovDeg, w, h, cloudCoverPct);
+        renderObjectSunlight(ctx, w, h, scene.annotations, lt, lightCfg, cloudCoverPct);
+        renderGroundSunlight(ctx, w, h, lt, lightCfg, cloudCoverPct);
+        if (lt.inView) {
+          renderSunDisc(ctx, lt, w, h);
+        }
+      }
+      renderSkyTint(ctx, w, h, sol, cloudCoverPct, effects?.clouds ?? CLOUD_CONFIG);
     }
 
-    // 3. Render Sun Disc & Rays if Sun is in camera FOV
-    if (sol.altitude_deg > 0 && scene) {
-      const cameraAzimuthDeg = scene.scene_metadata.camera_azimuth_deg || 0;
-      const cameraFovDeg = scene.scene_metadata.camera_fov_deg || 65;
+    // Cache the composited static frame (base + shadow + light) so the rain animation can
+    // composite it every frame without re-running the expensive passes.
+    if (!staticCanvasRef.current) {
+      staticCanvasRef.current = document.createElement('canvas');
+      staticCanvasRef.current.width = w;
+      staticCanvasRef.current.height = h;
+    }
+    const staticCtx = staticCanvasRef.current.getContext('2d');
+    if (staticCtx) {
+      staticCtx.clearRect(0, 0, w, h);
+      staticCtx.drawImage(canvas, 0, 0, w, h);
+    }
 
-      const diffAzimuth = (sol.azimuth_deg - cameraAzimuthDeg + 540) % 360 - 180;
-      const halfFov = cameraFovDeg / 2;
-
-      if (Math.abs(diffAzimuth) <= halfFov + 10) {
-        const xNorm = 0.5 + diffAzimuth / cameraFovDeg;
-        const yNorm = Math.max(0.06, Math.min(0.8, 0.45 - (sol.altitude_deg / 90) * 0.4));
-        const sunPx = xNorm * w;
-        const sunPy = yNorm * h;
-
-        ctx.save();
-        // Solar glow
-        const glow = ctx.createRadialGradient(sunPx, sunPy, 5, sunPx, sunPy, 70);
-        glow.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
-        glow.addColorStop(0.3, 'rgba(250, 204, 21, 0.4)');
-        glow.addColorStop(1, 'rgba(250, 204, 21, 0)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(sunPx, sunPy, 70, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Inner Sun
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(sunPx, sunPy, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fde047';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        ctx.restore();
-      }
+    const isRaining = !!(effects?.rain.enabled && (weather?.precipitation_mm ?? 0) > 0);
+    if (isRaining) {
+      startRainAnimation(w, h);
+    } else {
+      stopRainAnimation();
     }
   };
 

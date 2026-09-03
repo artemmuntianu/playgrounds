@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Annotation, Point2D, SceneAnnotation } from '../../types/shadow';
 
+// Height is no longer operator-provided. The projection derives shadow length from the polygon,
+// anchor, horizon and sun — not from this value. It only drives shadow blur softness, so a fixed
+// default is used.
+const DEFAULT_HEIGHT_METERS = 10;
+
 interface UseAnnotationToolArgs {
   imageUrl: string;
   depthMapUrl: string;
@@ -37,7 +42,6 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
   const [showForm, setShowForm] = useState(false);
   const [objectId, setObjectId] = useState('');
   const [category, setCategory] = useState<'tree' | 'structure' | 'building' | 'other'>('tree');
-  const [heightMeters, setHeightMeters] = useState<number>(8.0);
   const [canopyOpacity, setCanopyOpacity] = useState<number>(0.85);
   const [isOffscreen, setIsOffscreen] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -211,7 +215,7 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
         ctx.shadowBlur = 4;
         const labelTag = ann.is_offscreen ? ' (Off-screen)' : '';
         ctx.fillText(
-          `${index + 1}. ${ann.id} (${ann.height_meters}m)${labelTag}`,
+          `${index + 1}. ${ann.id}${labelTag}`,
           startPx.x + 4,
           startPx.y - 4
         );
@@ -473,7 +477,7 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     const newAnn: Annotation = {
       id: uniqueId,
       category: 'tree',
-      height_meters: 10.0,
+      height_meters: DEFAULT_HEIGHT_METERS,
       canopy_opacity: 0.85,
       ground_anchor: anchor,
       polygon_coordinates: poly,
@@ -495,17 +499,12 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
       setFormError('Object ID must be unique.');
       return;
     }
-    if (heightMeters <= 0) {
-      setFormError('Height must be greater than 0 metres.');
-      return;
-    }
-
     const defaultAnchor = activeAnchor || activePolygon[0] || { x: 0.5, y: 0.5 };
 
     const newAnnotation: Annotation = {
       id: cleanId,
       category,
-      height_meters: Number(heightMeters),
+      height_meters: DEFAULT_HEIGHT_METERS,
       canopy_opacity: Number(canopyOpacity),
       ground_anchor: defaultAnchor,
       polygon_coordinates: activePolygon,
@@ -555,7 +554,6 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     showForm, setShowForm,
     objectId, setObjectId,
     category, setCategory,
-    heightMeters, setHeightMeters,
     canopyOpacity, setCanopyOpacity,
     isOffscreen, setIsOffscreen,
     formError, setFormError,

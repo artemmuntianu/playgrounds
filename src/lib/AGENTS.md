@@ -27,6 +27,16 @@ the off-screen annotation margin (outside `[0, 1]`).
 - `depthWarp.ts` — `applyDepthWarpToPolygon()` samples the depth map
   (255 = near camera) and displaces shadow vertices by a small amount over
   foreground obstacles; `sampleDepthMap()` clamps out-of-bounds coords.
+- `sunOverlay.ts` — pure sun-to-screen helpers (`computeSunScreenInfo`,
+  `computeSunScreenDir`); the single source of truth for sun X/Y, in-view and direction.
+- `lighting.ts` — sun light passes (`computeSunLightTarget`, `renderSunDisc`,
+  `renderGroundSunlight`, `renderObjectSunlight`, `renderSkyTint`).
+- `clouds.ts` — `cloudDimFactor`, `skyOverlayColor` (sky tint colour).
+- `weather.ts` — Open-Meteo client (`fetchWeatherDay`, `selectWeatherAt`, `useWeather`)
+  plus derived display helpers (`deriveShadePct`, `deriveTempLabel`,
+  `buildEnvironmentEffects`).
+- `rain.ts` — rain + wet ground (`hashSeed`, `createRainLayer`, `renderRain`,
+  `renderWetGround`, `rainIntensityFromPrecip`).
 
 Types live in `../types/shadow.ts` (`Point2D`, `Annotation`,
 `SceneAnnotation`, `SolarPosition`). Coordinates are **normalised** and may be
@@ -36,9 +46,14 @@ Types live in `../types/shadow.ts` (`Point2D`, `Annotation`,
 
 - `../components/viewer/ViewerShadowCanvas.tsx` — public `/viewer/...` photo
   canvas. Passes `scene.scene_metadata.camera_azimuth_deg`, `horizon_y`,
-  `camera_fov_deg` and `camera_pitch_deg`.
+  `camera_fov_deg` and `camera_pitch_deg`. Accepts optional `weather` and `effects`
+  props (from `../../lib/weather`) to drive cloud cover, rain and lighting.
 - `../components/ShadowPreview.tsx` — annotation preview. Same metadata, plus a
-  draggable horizon line whose value (fraction or pixel row) is passed live.
+  draggable horizon line whose value (fraction or pixel row) is passed live. Uses the
+  shared `computeSunLightTarget` + `renderSunDisc`.
+
+Both call sites are also the only ones allowed to invoke the new `render*` functions
+(`lighting.ts`, `rain.ts`, `clouds.ts`). `renderShadows` itself is unchanged.
 
 ## Camera model (derived from user parameters)
 
@@ -92,6 +107,22 @@ horizontal ground depth of its `ground_anchor`**:
   `globalAlpha = canopy_opacity`, blur `clamp(height_meters * 0.8, 1, 18)px`.
 - Afterwards the original photo is redrawn clipped to each object polygon so an
   object is never shaded by its own shadow.
+
+## Rendering order (ViewerShadowCanvas)
+
+Canvas 2D, **no three.js**. Static content (base + shadow + light) is composited once per
+state change and cached into an offscreen `staticCanvasRef`; the visible canvas then
+composites the cache every frame plus a moving rain layer, so rain never re-runs the
+expensive shadow/light passes. Order:
+
+1. `drawImage(baseImage)`.
+2. `renderShadows(...)` (multiply + depth warp + object re-composite).
+3. `renderSkyTint(...)` (overcast / night overlay; no-op on a clear day).
+4. `renderGroundSunlight(...)` + `renderObjectSunlight(...)` (screen, warm when sun is low).
+5. `renderSunDisc(...)` when the sun is in view.
+6. If `effects.rain.enabled` and `precipitation_mm > 0`: cache the static frame into
+   `staticCanvasRef`, then run a `requestAnimationFrame` loop that clears the visible canvas,
+   draws `staticCanvasRef`, then `renderRain(...)` + `renderWetGround(...)`.
 
 ## Conventions & pitfalls
 

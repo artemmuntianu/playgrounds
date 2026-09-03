@@ -12,6 +12,8 @@ export interface PlaygroundPhoto {
   filename: string;
   /** Path to the depth map file, e.g. "photos/photo_1_depth.png" (optional) */
   depth_map_filename?: string;
+  /** Path to the semantic (3-colour) segmentation mask, e.g. "photos/photo_1_seg.png" (optional) */
+  semantic_mask_filename?: string;
   /** Camera azimuth in degrees clockwise from North (for shadow photos) */
   camera_azimuth_deg?: number;
   /** Camera horizontal FOV in degrees (for shadow photos) */

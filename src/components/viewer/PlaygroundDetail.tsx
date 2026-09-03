@@ -4,6 +4,13 @@ import type { SceneAnnotation } from '../../types/shadow';
 import { fetchPlayground, fetchScene } from '../../lib/api';
 import { ViewerShadowCanvas } from './ViewerShadowCanvas';
 import { t, type Locale } from '../../lib/i18n';
+import { getSolarPosition } from '../../lib/solar';
+import {
+  useWeather,
+  deriveShadePct,
+  deriveTempLabel,
+  buildEnvironmentEffects,
+} from '../../lib/weather';
 
 interface PlaygroundDetailProps {
   playgroundId: string;
@@ -21,6 +28,14 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
 
   // Time Machine Slider: minutes from midnight (Default 09:45 -> 9*60 + 45 = 585)
   const [timeMinutes, setTimeMinutes] = useState<number>(585);
+
+  // Live weather for the playground location (debounced + cached). Called at the top of the
+  // component so it is unconditional (before any early return) — required by the Rules of Hooks.
+  const { weather } = useWeather(
+    playground?.latitude ?? 0,
+    playground?.longitude ?? 0,
+    timeMinutes
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem('pmp_lang') as Locale | null;
@@ -89,11 +104,9 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
     return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
   };
 
-  // Compute dynamic shade calculation for display line
+  // Compute dynamic shade for the display line (weather-driven once loaded).
   const timeStr = formatTime(timeMinutes);
   const hours = Math.floor(timeMinutes / 60);
-  const isAfternoon = hours >= 12 && hours <= 17;
-  const shadePct = isAfternoon ? 82 : hours < 11 ? 75 : 45;
 
   if (loading) {
     return (
@@ -121,10 +134,27 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
     );
   }
 
+  const buildDate = (mins: number): Date => {
+    const d = new Date();
+    d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+    return d;
+  };
+  const sol = getSolarPosition(buildDate(timeMinutes), playground.latitude, playground.longitude);
+  const shadePct = weather
+    ? deriveShadePct(sol, weather, activeScene?.annotations.length ?? 0)
+    : hours < 11
+      ? 75
+      : hours >= 12 && hours <= 17
+        ? 82
+        : 45;
+  const effects = buildEnvironmentEffects(weather);
+
   const name = playground.name[lang] || playground.name.en;
   const location = playground.location_name[lang] || playground.location_name.en;
   const shadowText = playground.attributes.shadow_coverage[lang] || playground.attributes.shadow_coverage.en;
-  const tempText = playground.attributes.surface_temperature[lang] || playground.attributes.surface_temperature.en;
+  const tempText = weather
+    ? deriveTempLabel(weather)[lang]
+    : playground.attributes.surface_temperature[lang] || playground.attributes.surface_temperature.en;
   const ageText = playground.attributes.target_age_group[lang] || playground.attributes.target_age_group.en;
 
   const currentPhotoUrl = activePhoto
@@ -132,6 +162,9 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
     : '';
   const currentDepthUrl = activePhoto?.depth_map_filename
     ? `/api/playgrounds/${playground.id}/photo/${activePhoto.depth_map_filename}`
+    : '';
+  const currentSegUrl = activePhoto?.semantic_mask_filename
+    ? `/api/playgrounds/${playground.id}/photo/${activePhoto.semantic_mask_filename}`
     : '';
 
   const isCurrentPhotoAdditional = !!activePhoto?.is_additional;
@@ -183,11 +216,14 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
             <ViewerShadowCanvas
               imageUrl={currentPhotoUrl}
               depthMapUrl={currentDepthUrl}
+              segMaskUrl={currentSegUrl}
               scene={activeScene}
               latitude={playground.latitude}
               longitude={playground.longitude}
               simulatedTimeMinutes={timeMinutes}
               isAdditional={isCurrentPhotoAdditional}
+              weather={weather}
+              effects={effects}
             />
           ) : (
             <div className="w-full aspect-[4/3] flex flex-col items-center justify-center text-slate-400 bg-white">

@@ -10,8 +10,6 @@ interface AnnotationSidebarProps {
   setObjectId: (v: string) => void;
   category: AnnotationCategory;
   setCategory: (c: AnnotationCategory) => void;
-  heightMeters: number;
-  setHeightMeters: (v: number) => void;
   canopyOpacity: number;
   setCanopyOpacity: (v: number) => void;
   handleAddAnnotation: (e: React.FormEvent) => void;
@@ -39,8 +37,6 @@ export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
   setObjectId,
   category,
   setCategory,
-  heightMeters,
-  setHeightMeters,
   canopyOpacity,
   setCanopyOpacity,
   handleAddAnnotation,
@@ -108,21 +104,6 @@ export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
               <option value="building">Building</option>
               <option value="other">Other</option>
             </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-gray-700">
-              Height (metres): {heightMeters}m
-            </label>
-            <input
-              type="number"
-              step="0.5"
-              min="0.5"
-              max="100"
-              value={heightMeters}
-              onChange={(e) => setHeightMeters(Number(e.target.value))}
-              className="w-full mt-1 px-2.5 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-            />
           </div>
 
           <div>
@@ -247,7 +228,7 @@ export const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
                     {i + 1}. {ann.id}
                   </span>
                   <span className="ml-1 text-gray-500">
-                    ({ann.category}, {ann.height_meters}m)
+                    ({ann.category})
                   </span>
                   {ann.ground_projection_coordinates &&
                     ann.ground_projection_coordinates.length === ann.polygon_coordinates.length && (

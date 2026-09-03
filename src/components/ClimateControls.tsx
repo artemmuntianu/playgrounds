@@ -1,3 +1,4 @@
+// LEGACY — manual sun-angle slider (unconnected to the 2.5D shadow pipeline).
 export default function ClimateControls({ 
   sunAngle, 
   onSunAngleChange 

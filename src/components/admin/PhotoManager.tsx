@@ -21,6 +21,8 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ playground, onUpdate
   const [selectedDepthFile, setSelectedDepthFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [depthPreviewUrl, setDepthPreviewUrl] = useState<string | null>(null);
+  const [selectedSegMaskFile, setSelectedSegMaskFile] = useState<File | null>(null);
+  const [segPreviewUrl, setSegPreviewUrl] = useState<string | null>(null);
   const [cameraAzimuth, setCameraAzimuth] = useState<number>(0);
   const [cameraFov, setCameraFov] = useState<number>(65);
   const [makeThumbnail, setMakeThumbnail] = useState<boolean>(playground.photos.length === 0);
@@ -50,6 +52,12 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ playground, onUpdate
     }
   };
 
+  const handleSegMaskFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setSelectedSegMaskFile(file);
+    setSegPreviewUrl(file ? URL.createObjectURL(file) : null);
+  };
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) return;
@@ -70,6 +78,7 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ playground, onUpdate
         isThumbnail: makeThumbnail,
         isAdditional: uploadType === 'additional',
         depthFile: selectedDepthFile,
+        segMaskFile: selectedSegMaskFile,
       });
 
       onUpdate(updatedPlayground);
@@ -77,8 +86,10 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ playground, onUpdate
       // Reset form
       setSelectedFile(null);
       setSelectedDepthFile(null);
+      setSelectedSegMaskFile(null);
       setPreviewUrl(null);
       setDepthPreviewUrl(null);
+      setSegPreviewUrl(null);
     } catch (err: any) {
       setUploadError(err.message || 'Upload failed');
     } finally {
@@ -175,6 +186,8 @@ export const PhotoManager: React.FC<PhotoManagerProps> = ({ playground, onUpdate
         handleUploadSubmit={handleUploadSubmit}
         handleFileChange={handleFileChange}
         handleDepthFileChange={handleDepthFileChange}
+        handleSegMaskFileChange={handleSegMaskFileChange}
+        segPreviewUrl={segPreviewUrl}
         cameraAzimuth={cameraAzimuth}
         setCameraAzimuth={setCameraAzimuth}
         cameraFov={cameraFov}

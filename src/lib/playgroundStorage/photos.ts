@@ -40,6 +40,24 @@ export async function savePlaygroundDepthMap(
 }
 
 /**
+ * Save a semantic (3-colour) segmentation mask for a playground photo.
+ * Returns the relative filename (e.g. "photo_1_seg.png").
+ */
+export async function savePlaygroundSegMask(
+  playgroundId: string,
+  photoId: string,
+  fileBuffer: Buffer,
+  mimeType: string,
+): Promise<string> {
+  const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
+  const filename = `${photoId}_seg${ext}`;
+  const photosDir = path.join(playgroundDir(playgroundId), 'photos');
+  await fs.mkdir(photosDir, { recursive: true });
+  await fs.writeFile(path.join(photosDir, filename), fileBuffer);
+  return filename;
+}
+
+/**
  * Delete a photo file and associated depth map / scene.
  */
 export async function deletePlaygroundPhoto(
@@ -63,6 +81,13 @@ export async function deletePlaygroundPhoto(
   if (photo.depth_map_filename) {
     try {
       await fs.unlink(path.join(dir, 'photos', photo.depth_map_filename));
+    } catch { /* ignore */ }
+  }
+
+  // Delete semantic segmentation mask if exists
+  if (photo.semantic_mask_filename) {
+    try {
+      await fs.unlink(path.join(dir, 'photos', photo.semantic_mask_filename));
     } catch { /* ignore */ }
   }
 

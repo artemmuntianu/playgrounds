@@ -1,3 +1,5 @@
+// LEGACY — this 3D box editor + sun-angle dashboard is unconnected to the 2.5D shadow pipeline.
+
 import { useState, useEffect } from 'react';
 import PlaygroundViewer from './PlaygroundViewer';
 import ClimateControls from './ClimateControls';

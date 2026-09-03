@@ -4,6 +4,7 @@ import {
   updatePlayground,
   savePlaygroundPhoto,
   savePlaygroundDepthMap,
+  savePlaygroundSegMask,
   deletePlaygroundPhoto,
 } from '../../../../lib/playgroundStorage';
 import type { PlaygroundPhoto } from '../../../../types/playground';
@@ -31,6 +32,7 @@ export const POST: APIRoute = async ({ params, request }) => {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const depthFile = formData.get('depth_file') as File | null;
+    const segMaskFile = formData.get('seg_mask_file') as File | null;
     const photoId = (formData.get('photo_id') as string) || `photo_${Date.now()}`;
     const cameraAzimuth = Number(formData.get('camera_azimuth_deg')) || 0;
     const cameraFov = Number(formData.get('camera_fov_deg')) || 65;
@@ -77,10 +79,23 @@ export const POST: APIRoute = async ({ params, request }) => {
       );
     }
 
+    // Save optional semantic segmentation mask
+    let savedSegFilename: string | undefined = undefined;
+    if (segMaskFile && segMaskFile.size > 0) {
+      const segBuffer = Buffer.from(await segMaskFile.arrayBuffer());
+      savedSegFilename = await savePlaygroundSegMask(
+        playgroundId,
+        photoId,
+        segBuffer,
+        segMaskFile.type
+      );
+    }
+
     const newPhoto: PlaygroundPhoto = {
       id: photoId,
       filename: savedFilename,
       depth_map_filename: savedDepthFilename,
+      semantic_mask_filename: savedSegFilename,
       camera_azimuth_deg: isAdditional ? undefined : cameraAzimuth,
       camera_fov_deg: isAdditional ? undefined : cameraFov,
       scene_id: isAdditional ? undefined : `${photoId}_scene`,

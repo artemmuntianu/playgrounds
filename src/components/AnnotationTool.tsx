@@ -27,7 +27,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     selectedAnnotationId, setSelectedAnnotationId,
     activeGroundBases, setActiveGroundBases,
     showForm, setShowForm, objectId, setObjectId, category, setCategory,
-    heightMeters, setHeightMeters, canopyOpacity, setCanopyOpacity,
+    canopyOpacity, setCanopyOpacity,
     isOffscreen, formError,
     containerRef, imageRef, canvasRef,
     getImageRectMetrics, drawOverlay,
@@ -79,8 +79,6 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
         setObjectId={setObjectId}
         category={category}
         setCategory={setCategory}
-        heightMeters={heightMeters}
-        setHeightMeters={setHeightMeters}
         canopyOpacity={canopyOpacity}
         setCanopyOpacity={setCanopyOpacity}
         handleAddAnnotation={handleAddAnnotation}

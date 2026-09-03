@@ -8,6 +8,8 @@ interface PhotoUploadFormProps {
   handleUploadSubmit: (e: React.FormEvent) => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleDepthFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSegMaskFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  segPreviewUrl: string | null;
   cameraAzimuth: number;
   setCameraAzimuth: (v: number) => void;
   cameraFov: number;
@@ -28,6 +30,8 @@ export const PhotoUploadForm: React.FC<PhotoUploadFormProps> = ({
   handleUploadSubmit,
   handleFileChange,
   handleDepthFileChange,
+  handleSegMaskFileChange,
+  segPreviewUrl,
   cameraAzimuth,
   setCameraAzimuth,
   cameraFov,
@@ -121,6 +125,25 @@ export const PhotoUploadForm: React.FC<PhotoUploadFormProps> = ({
               </div>
             )}
 
+            {/* Semantic Segmentation Mask (3-colour: sky / vertical / ground) */}
+            {uploadType === 'shadow' && (
+              <div>
+                <label htmlFor="segMaskInput" className="block text-xs font-semibold text-slate-600">
+                  Semantic Mask (optional) — sky / vertical / ground
+                </label>
+                <input
+                  id="segMaskInput"
+                  type="file"
+                  accept="image/png"
+                  onChange={handleSegMaskFileChange}
+                  className="block w-full mt-1 text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  3-colour PNG. Sky=blue (#1E78FF), vertical=red (#FF3C32), ground=green (#32BE5A).
+                </p>
+              </div>
+            )}
+
             {/* Shadow Camera Parameters (for Shadow photos) */}
             {uploadType === 'shadow' && (
               <div className="grid grid-cols-2 gap-3 pt-1">
@@ -192,6 +215,19 @@ export const PhotoUploadForm: React.FC<PhotoUploadFormProps> = ({
                   <img
                     src={depthPreviewUrl}
                     alt="Depth Preview"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            )}
+
+            {uploadType === 'shadow' && segPreviewUrl && (
+              <div>
+                <div className="text-xs font-semibold text-emerald-900 mb-1">Semantic Mask Preview</div>
+                <div className="w-full h-24 bg-slate-900 rounded-lg border border-emerald-300 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={segPreviewUrl}
+                    alt="Segmentation Mask Preview"
                     className="w-full h-full object-contain"
                   />
                 </div>

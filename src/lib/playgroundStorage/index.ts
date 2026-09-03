@@ -12,6 +12,7 @@ export {
 export {
   savePlaygroundPhoto,
   savePlaygroundDepthMap,
+  savePlaygroundSegMask,
   deletePlaygroundPhoto,
   getPhotoUrl,
   getPhotoPath,
