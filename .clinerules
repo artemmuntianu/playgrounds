@@ -1,0 +1,6 @@
+# Frontend Agent Rules (DeepSeek V4 Optimization)
+
+- DO NOT rewrite an entire component file to change styling. Use surgical string replacements or lines patches.
+- Prioritize Tailwind CSS utility classes over creating arbitrary custom inline styles unless specifically requested.
+- Do not spend tokens generating heavy mock data fixtures unless the component lacks typescript definitions.
+- Keep components modular. If a component exceeds 250 lines during an adjustment, proactively suggest breaking it down into sub-components.

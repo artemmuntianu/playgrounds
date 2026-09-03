@@ -108,8 +108,20 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
 
     // 2. Render shadow overlay if sun is up and scene annotations exist
     if (sol.altitude_deg > 0 && scene && scene.annotations.length > 0) {
-      const cameraAzimuth = scene.scene_metadata.camera_azimuth_deg || 0;
-      renderShadows(ctx, w, h, scene.annotations, sol, depthMapData, baseImg, cameraAzimuth);
+      const meta = scene.scene_metadata;
+      renderShadows(
+        ctx,
+        w,
+        h,
+        scene.annotations,
+        sol,
+        depthMapData,
+        baseImg,
+        meta.camera_azimuth_deg || 0,
+        meta.horizon_y,
+        meta.camera_fov_deg || 65,
+        meta.camera_pitch_deg
+      );
     }
 
     // 3. Render Sun Disc & Rays if Sun is in camera FOV

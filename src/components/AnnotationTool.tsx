@@ -23,13 +23,20 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
   const [cameraFov, setCameraFov] = useState<number>(
     initialScene?.scene_metadata.camera_fov_deg || 65
   );
+  const [horizonY, setHorizonY] = useState<number>(
+    initialScene?.scene_metadata.horizon_y ?? 0.35
+  );
   const [annotations, setAnnotations] = useState<Annotation[]>(
     initialScene?.annotations || []
   );
 
-  const [mode, setMode] = useState<'idle' | 'drawing' | 'setting_anchor'>('idle');
+  const [mode, setMode] = useState<'idle' | 'drawing' | 'setting_anchor' | 'setting_horizon' | 'ground_bases'>('idle');
   const [activePolygon, setActivePolygon] = useState<Point2D[]>([]);
   const [activeAnchor, setActiveAnchor] = useState<Point2D | null>(null);
+
+  // Selection + per-vertex ground projection mode ("open structures", variant C)
+  const [selectedAnnotationId, setSelectedAnnotationId] = useState<string | null>(null);
+  const [activeGroundBases, setActiveGroundBases] = useState<Point2D[]>([]);
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -53,29 +60,61 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     }
   }, [showForm, category, annotations.length, objectId]);
 
-  // Convert canvas click (px, py) to normalized image coordinates (0.0-1.0 is image, negative/above 1 is off-screen)
-  const canvasPxToNorm = (px: number, py: number, totalW: number, totalH: number): Point2D => {
-    const imgW = totalW / (1 + 2 * MARGIN_PCT);
-    const imgH = totalH / (1 + 2 * MARGIN_PCT);
-    const marginX = imgW * MARGIN_PCT;
-    const marginY = imgH * MARGIN_PCT;
-
+  // ---------------------------------------------------------------------------
+  // Coordinate system.
+  //
+  // The canvas fills the padded container (the dark "off-screen margin" band)
+  // while the real photo is the <img> underneath. Normalised annotation
+  // coordinates (0..1 = photo area) MUST be derived from the *measured* image
+  // rectangle on screen. Deriving them from a fixed 15% margin assumed inside
+  // the canvas buffer made every saved point drift by roughly the margin width
+  // (the buffer is CSS-stretched over a padded container), which is why the
+  // annotation mask and its shadow appeared shifted down-left in the preview.
+  // ---------------------------------------------------------------------------
+  const getImageRectMetrics = () => {
+    const canvas = canvasRef.current;
+    const img = imageRef.current;
+    if (!canvas || !img) return null;
+    const canvasRect = canvas.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
+    if (
+      canvasRect.width === 0 ||
+      canvasRect.height === 0 ||
+      imgRect.width === 0 ||
+      imgRect.height === 0
+    ) {
+      return null;
+    }
     return {
-      x: (px - marginX) / imgW,
-      y: (py - marginY) / imgH,
+      // Image rectangle in CSS pixels, relative to the canvas element.
+      imgLeft: imgRect.left - canvasRect.left,
+      imgTop: imgRect.top - canvasRect.top,
+      imgW: imgRect.width,
+      imgH: imgRect.height,
+      // Canvas buffer pixels -> CSS pixels (the buffer is stretched by CSS).
+      scaleX: canvas.width / canvasRect.width,
+      scaleY: canvas.height / canvasRect.height,
     };
   };
 
-  // Convert normalized image coordinate to canvas pixel coordinate
-  const normToCanvasPx = (pt: Point2D, totalW: number, totalH: number) => {
-    const imgW = totalW / (1 + 2 * MARGIN_PCT);
-    const imgH = totalH / (1 + 2 * MARGIN_PCT);
-    const marginX = imgW * MARGIN_PCT;
-    const marginY = imgH * MARGIN_PCT;
-
+  // Convert a canvas click (px/py in CSS pixels relative to the canvas element)
+  // to normalised image coordinates (0..1 = photo, outside values = off-screen).
+  const canvasPxToNorm = (px: number, py: number): Point2D => {
+    const m = getImageRectMetrics();
+    if (!m) return { x: 0, y: 0 };
     return {
-      x: marginX + pt.x * imgW,
-      y: marginY + pt.y * imgH,
+      x: (px - m.imgLeft) / m.imgW,
+      y: (py - m.imgTop) / m.imgH,
+    };
+  };
+
+  // Convert normalised image coordinates to canvas *buffer* pixels (for drawing).
+  const normToCanvasPx = (pt: Point2D) => {
+    const m = getImageRectMetrics();
+    if (!m) return { x: 0, y: 0 };
+    return {
+      x: (m.imgLeft + pt.x * m.imgW) * m.scaleX,
+      y: (m.imgTop + pt.y * m.imgH) * m.scaleY,
     };
   };
 
@@ -92,9 +131,10 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     const baseH = img.clientHeight;
     if (baseW === 0 || baseH === 0) return;
 
-    // Canvas dimensions include the 15% outer margin
-    const totalW = baseW * (1 + 2 * MARGIN_PCT);
-    const totalH = baseH * (1 + 2 * MARGIN_PCT);
+    // Canvas dimensions include the 15% outer margin (rounded to whole buffer
+    // pixels so the size comparison below is stable across redraws).
+    const totalW = Math.round(baseW * (1 + 2 * MARGIN_PCT));
+    const totalH = Math.round(baseH * (1 + 2 * MARGIN_PCT));
 
     if (canvas.width !== totalW || canvas.height !== totalH) {
       canvas.width = totalW;
@@ -104,37 +144,56 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     ctx.clearRect(0, 0, totalW, totalH);
 
     // Draw outer off-screen margin background indicator
-    const marginX = baseW * MARGIN_PCT;
-    const marginY = baseH * MARGIN_PCT;
+    // Photo rectangle in canvas *buffer* pixels (matches the <img> on screen).
+    const photoMetrics = getImageRectMetrics();
+    const photoX = photoMetrics ? photoMetrics.imgLeft * photoMetrics.scaleX : baseW * MARGIN_PCT;
+    const photoY = photoMetrics ? photoMetrics.imgTop * photoMetrics.scaleY : baseH * MARGIN_PCT;
+    const photoW = photoMetrics ? photoMetrics.imgW * photoMetrics.scaleX : baseW;
+    const photoH = photoMetrics ? photoMetrics.imgH * photoMetrics.scaleY : baseH;
 
     // Dark tint for off-screen canvas margin
     ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
     ctx.fillRect(0, 0, totalW, totalH);
 
     // Clear photo inner rectangle
-    ctx.clearRect(marginX, marginY, baseW, baseH);
+    ctx.clearRect(photoX, photoY, photoW, photoH);
 
     // Draw photo border frame indicator
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
-    ctx.strokeRect(marginX, marginY, baseW, baseH);
+    ctx.strokeRect(photoX, photoY, photoW, photoH);
     ctx.setLineDash([]); // Reset line dash
 
     // Photo label badge
     ctx.fillStyle = '#3b82f6';
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillText('📷 Photo Boundary (0,0 to 1,1)', marginX + 6, marginY + 16);
+    ctx.fillText('📷 Photo Boundary (0,0 to 1,1)', photoX + 6, photoY + 16);
+
+    // Draw Horizon Line
+    const horizonYpx = horizonY * photoH;
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(photoX, photoY + horizonYpx);
+    ctx.lineTo(photoX + photoW, photoY + horizonYpx);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(`🌅 Horizon Level (${(horizonY * 100).toFixed(1)}%)`, photoX + 6, photoY + horizonYpx - 6);
 
     // Render existing annotations
     annotations.forEach((ann, index) => {
       if (ann.polygon_coordinates.length > 0) {
         ctx.beginPath();
-        const startPx = normToCanvasPx(ann.polygon_coordinates[0], totalW, totalH);
+        const startPx = normToCanvasPx(ann.polygon_coordinates[0]);
         ctx.moveTo(startPx.x, startPx.y);
 
         for (let i = 1; i < ann.polygon_coordinates.length; i++) {
-          const ptPx = normToCanvasPx(ann.polygon_coordinates[i], totalW, totalH);
+          const ptPx = normToCanvasPx(ann.polygon_coordinates[i]);
           ctx.lineTo(ptPx.x, ptPx.y);
         }
         ctx.closePath();
@@ -166,7 +225,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
 
       // Draw ground anchor
       if (ann.ground_anchor) {
-        const anchorPx = normToCanvasPx(ann.ground_anchor, totalW, totalH);
+        const anchorPx = normToCanvasPx(ann.ground_anchor);
         ctx.beginPath();
         ctx.arc(anchorPx.x, anchorPx.y, 6, 0, Math.PI * 2);
         ctx.fillStyle = ann.is_offscreen ? '#f97316' : '#ef4444';
@@ -175,16 +234,119 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
         ctx.lineWidth = 1.5;
         ctx.stroke();
       }
+
+      // Draw per-vertex ground projections (variant C): a dashed plumb line from
+      // each silhouette vertex down to the ground point vertically below it.
+      if (
+        ann.ground_projection_coordinates &&
+        ann.ground_projection_coordinates.length === ann.polygon_coordinates.length
+      ) {
+        ctx.setLineDash([4, 3]);
+        ann.ground_projection_coordinates.forEach((gp, gi) => {
+          const vPx = normToCanvasPx(ann.polygon_coordinates[gi]);
+          const gPx = normToCanvasPx(gp);
+
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.85)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(vPx.x, vPx.y);
+          ctx.lineTo(gPx.x, gPx.y);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(gPx.x, gPx.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#10b981';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+      }
     });
+
+    // Ground-bases mode overlay: highlight the next vertex to give a ground
+    // point to, and draw the vertical (plumb) guide through it. Because the
+    // camera is pitched, a plumb line in the image points toward the vertical
+    // vanishing point V = (cx, cy + f/tan(pitch)).
+    if (mode === 'ground_bases') {
+      const target = annotations.find((a) => a.id === selectedAnnotationId);
+      const targetPolygon = target?.polygon_coordinates;
+
+      if (targetPolygon && activeGroundBases.length < targetPolygon.length) {
+        const vertex = targetPolygon[activeGroundBases.length];
+        const vertexPx = normToCanvasPx(vertex);
+
+        ctx.save();
+        ctx.setLineDash([5, 4]);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(vertexPx.x, vertexPx.y);
+
+        const fPx = baseW / 2 / Math.tan((cameraFov * Math.PI) / 360);
+        const pitch = Math.atan2(baseH / 2 - horizonY * baseH, fPx);
+        const vertexImgX = vertex.x * baseW;
+        const vertexImgY = vertex.y * baseH;
+
+        let endPx = { x: vertexPx.x, y: totalH };
+        if (Math.abs(pitch) > 1e-4) {
+          const vImgY = baseH / 2 + fPx / Math.tan(pitch);
+          const dirX = baseW / 2 - vertexImgX;
+          const dirY = vImgY - vertexImgY;
+          const t =
+            dirY > 0
+              ? (2 * baseH - vertexImgY) / dirY
+              : (2 * baseH - vertexImgY) / (Math.abs(dirY) + 1e-6);
+          endPx = normToCanvasPx({
+            x: (vertexImgX + dirX * t) / baseW,
+            y: (vertexImgY + dirY * t) / baseH,
+          });
+        }
+        ctx.lineTo(endPx.x, endPx.y);
+        ctx.stroke();
+        ctx.restore();
+
+        // Marker on the target vertex
+        ctx.beginPath();
+        ctx.arc(vertexPx.x, vertexPx.y, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      // In-progress ground base markers
+      if (targetPolygon) {
+        activeGroundBases.forEach((gp, gi) => {
+          const vPx = normToCanvasPx(targetPolygon[gi]);
+          const gPx = normToCanvasPx(gp);
+          ctx.setLineDash([4, 3]);
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(vPx.x, vPx.y);
+          ctx.lineTo(gPx.x, gPx.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(gPx.x, gPx.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#10b981';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+      }
+    }
 
     // Render active drawing polygon
     if (activePolygon.length > 0) {
       ctx.beginPath();
-      const firstPx = normToCanvasPx(activePolygon[0], totalW, totalH);
+      const firstPx = normToCanvasPx(activePolygon[0]);
       ctx.moveTo(firstPx.x, firstPx.y);
 
       for (let i = 1; i < activePolygon.length; i++) {
-        const ptPx = normToCanvasPx(activePolygon[i], totalW, totalH);
+        const ptPx = normToCanvasPx(activePolygon[i]);
         ctx.lineTo(ptPx.x, ptPx.y);
       }
 
@@ -194,7 +356,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
 
       // Vertex handles
       activePolygon.forEach((pt) => {
-        const handlePx = normToCanvasPx(pt, totalW, totalH);
+        const handlePx = normToCanvasPx(pt);
         ctx.beginPath();
         ctx.arc(handlePx.x, handlePx.y, 4, 0, Math.PI * 2);
         ctx.fillStyle = '#3b82f6';
@@ -207,7 +369,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
 
     // Active anchor handle
     if (activeAnchor) {
-      const anchorPx = normToCanvasPx(activeAnchor, totalW, totalH);
+      const anchorPx = normToCanvasPx(activeAnchor);
       ctx.beginPath();
       ctx.arc(anchorPx.x, anchorPx.y, 6, 0, Math.PI * 2);
       ctx.fillStyle = '#22c55e';
@@ -220,7 +382,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
 
   useEffect(() => {
     drawOverlay();
-  }, [annotations, activePolygon, activeAnchor, mode]);
+  }, [annotations, activePolygon, activeAnchor, activeGroundBases, selectedAnnotationId, mode]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -230,13 +392,32 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     const px = e.clientX - rect.left;
     const py = e.clientY - rect.top;
 
-    const normPt = canvasPxToNorm(px, py, rect.width, rect.height);
+    const normPt = canvasPxToNorm(px, py);
 
     if (mode === 'drawing') {
       setActivePolygon((prev) => [...prev, normPt]);
     } else if (mode === 'setting_anchor') {
       setActiveAnchor(normPt);
       setMode('idle');
+    } else if (mode === 'ground_bases') {
+      const target = annotations.find((a) => a.id === selectedAnnotationId);
+      if (!target) {
+        setMode('idle');
+        return;
+      }
+      const next = [...activeGroundBases, normPt];
+      setActiveGroundBases(next);
+      if (next.length >= target.polygon_coordinates.length) {
+        setAnnotations((prev) =>
+          prev.map((a) =>
+            a.id === selectedAnnotationId
+              ? { ...a, ground_projection_coordinates: next }
+              : a
+          )
+        );
+        setActiveGroundBases([]);
+        setMode('idle');
+      }
     }
   };
 
@@ -347,6 +528,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
 
   const handleDeleteAnnotation = (id: string) => {
     setAnnotations(annotations.filter((a) => a.id !== id));
+    setSelectedAnnotationId((cur) => (cur === id ? null : cur));
   };
 
   const handleExportScene = () => {
@@ -358,6 +540,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
         depth_map_path: depthMapUrl,
         camera_azimuth_deg: Number(cameraAzimuth),
         camera_fov_deg: Number(cameraFov),
+        horizon_y: Number(horizonY),
       },
       annotations,
     };
@@ -399,12 +582,49 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
 
             <button
               type="button"
+              onClick={() => setMode('setting_horizon')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                mode === 'setting_horizon'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              🌅 {mode === 'setting_horizon' ? 'Click/Drag vertically to set horizon' : 'Set Horizon Line'}
+            </button>
+
+            <button
+              type="button"
               disabled={activePolygon.length < 3}
               onClick={handleFinishObject}
               className="px-3 py-1.5 text-xs font-semibold rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
               ✅ Finish Object ({activePolygon.length} pts)
             </button>
+            <button
+              type="button"
+              disabled={!selectedAnnotationId}
+              onClick={() => {
+                if (!selectedAnnotationId) return;
+                if (mode === 'ground_bases') {
+                  setMode('idle');
+                  setActiveGroundBases([]);
+                  return;
+                }
+                setActiveGroundBases([]);
+                setMode('ground_bases');
+              }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                mode === 'ground_bases'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-100'
+              }`}
+              title="Select an object in the list, then click its vertices' ground points (one per silhouette vertex). Fixes shadows for slanted/open structures such as swing legs and bars."
+            >
+              {mode === 'ground_bases'
+                ? `Ground pt ${activeGroundBases.length}/${annotations.find((a) => a.id === selectedAnnotationId)?.polygon_coordinates.length ?? 0}`
+                : 'Set Ground Projections'}
+            </button>
+
           </div>
 
           {/* Quick Presets for Off-Screen Shadow Casters */}
@@ -453,6 +673,36 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
             ref={canvasRef}
             onClick={handleCanvasClick}
             onDoubleClick={handleDoubleClick}
+            onMouseDown={(e) => {
+              if (mode === 'setting_horizon') {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const metrics = getImageRectMetrics();
+                if (!metrics) return;
+                const normY = Math.max(
+                  0,
+                  Math.min(1, (e.clientY - rect.top - metrics.imgTop) / metrics.imgH)
+                );
+                setHorizonY(Number(normY.toFixed(4)));
+                drawOverlay();
+              }
+            }}
+            onMouseMove={(e) => {
+              if (mode === 'setting_horizon' && e.buttons === 1) {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                const metrics = getImageRectMetrics();
+                if (!metrics) return;
+                const normY = Math.max(
+                  0,
+                  Math.min(1, (e.clientY - rect.top - metrics.imgTop) / metrics.imgH)
+                );
+                setHorizonY(Number(normY.toFixed(4)));
+                drawOverlay();
+              }
+            }}
             className="absolute inset-0 w-full h-full cursor-crosshair z-10"
           />
         </div>
@@ -601,13 +851,29 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
               />
             </div>
           </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-600" title="Y-coordinate of the horizon line in pixels">
+              Horizon Line (px):
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="2000"
+              value={horizonY}
+              onChange={(e) => setHorizonY(Number(e.target.value))}
+              className="w-full mt-1 px-2.5 py-1 text-sm border border-gray-300 rounded"
+            />
+          </div>
         </div>
 
         {/* Objects List */}
         <div className="flex-1 p-4 bg-gray-50 border border-gray-200 rounded-lg flex flex-col min-h-[200px]">
-          <h3 className="font-bold text-gray-800 text-sm mb-2">
+          <h3 className="font-bold text-gray-800 text-sm mb-1">
             Annotated Objects ({annotations.length})
           </h3>
+          <p className="text-[10px] text-gray-500 mb-2">
+            Select an object, then <strong>Set Ground Projections</strong> to mark the ground point below each of its vertices (for slanted/open structures).
+          </p>
 
           {annotations.length === 0 ? (
             <p className="text-xs text-gray-500 italic my-auto text-center">
@@ -618,8 +884,15 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
               {annotations.map((ann, i) => (
                 <div
                   key={ann.id}
-                  className={`flex items-center justify-between p-2 text-xs border rounded shadow-sm ${
-                    ann.is_offscreen ? 'bg-amber-50/70 border-amber-200' : 'bg-white border-gray-200'
+                  onClick={() =>
+                    setSelectedAnnotationId((prev) => (prev === ann.id ? null : ann.id))
+                  }
+                  className={`flex items-center justify-between p-2 text-xs border rounded shadow-sm cursor-pointer ${
+                    selectedAnnotationId === ann.id
+                      ? 'ring-2 ring-emerald-400 border-emerald-300 bg-emerald-50'
+                      : ann.is_offscreen
+                        ? 'bg-amber-50/70 border-amber-200'
+                        : 'bg-white border-gray-200'
                   }`}
                 >
                   <div>
@@ -629,6 +902,12 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
                     <span className="ml-1 text-gray-500">
                       ({ann.category}, {ann.height_meters}m)
                     </span>
+                    {ann.ground_projection_coordinates &&
+                      ann.ground_projection_coordinates.length === ann.polygon_coordinates.length && (
+                        <span className="ml-1.5 px-1 py-0.2 text-[9px] bg-emerald-100 text-emerald-700 rounded font-bold">
+                          ground proj
+                        </span>
+                      )}
                     {ann.is_offscreen && (
                       <span className="ml-1.5 px-1 py-0.2 text-[9px] bg-amber-200 text-amber-900 rounded font-bold">
                         Off-screen
@@ -637,7 +916,10 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => handleDeleteAnnotation(ann.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAnnotation(ann.id);
+                    }}
                     className="text-red-500 hover:text-red-700 font-bold ml-2 px-1.5 py-0.5 rounded hover:bg-red-50"
                     title="Delete Object"
                   >

@@ -182,6 +182,7 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
             scene={scene}
             latitude={playground.latitude}
             longitude={playground.longitude}
+            onSave={handleSaveScene}
           />
         </div>
       )}

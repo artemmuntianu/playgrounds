@@ -265,6 +265,7 @@ export const ShadowPipelineApp: React.FC = () => {
             scene={scene}
             latitude={latitude}
             longitude={longitude}
+            onSave={handleAnnotationSave}
           />
         </div>
       )}

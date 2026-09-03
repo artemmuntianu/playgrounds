@@ -10,6 +10,7 @@ interface ShadowPreviewProps {
   scene: SceneAnnotation;
   latitude: number;
   longitude: number;
+  onSave?: (scene: SceneAnnotation) => void;
 }
 
 export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
@@ -18,6 +19,7 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
   scene,
   latitude,
   longitude,
+  onSave,
 }) => {
   const getInitialDateTimeString = () => {
     const now = new Date();
@@ -32,10 +34,11 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
   const [depthMapData, setDepthMapData] = useState<ImageData | null>(null);
   const [loadingDepth, setLoadingDepth] = useState<boolean>(true);
   const [isRendering, setIsRendering] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const baseImageRef = useRef<HTMLImageElement | null>(null);
-  const [horizonY, setHorizonY] = useState<number>(200);
+  const [horizonY, setHorizonY] = useState<number>(scene.scene_metadata.horizon_y ?? 200);
   const [isDraggingHorizon, setIsDraggingHorizon] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -92,11 +95,25 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
     img.crossOrigin = 'anonymous';
     img.src = imageUrl;
     img.onload = () => {
-      handleImageLoaded(img);
+      baseImageRef.current = img;
+      triggerRender();
     };
   }, [imageUrl]);
 
-  // Trigger render when datetime, scene, or depth data changes (debounced by 200ms)
+  const handleSaveHorizon = () => {
+    const updatedScene: SceneAnnotation = {
+      ...scene,
+      scene_metadata: {
+        ...scene.scene_metadata,
+        horizon_y: horizonY,
+      },
+    };
+    if (onSave) {
+      onSave(updatedScene);
+      setSaveMessage('Horizon saved successfully!');
+      setTimeout(() => setSaveMessage(null), 3000);
+    }
+  };
   useEffect(() => {
     const timer = setTimeout(() => {
       triggerRender();
@@ -257,8 +274,20 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
 
     // 2. Overlay shadows if sun is above horizon
     if (sol.altitude_deg > 0 && scene.annotations.length > 0) {
-      const cameraAzimuth = scene.scene_metadata.camera_azimuth_deg || 0;
-      renderShadows(ctx, w, h, scene.annotations, sol, depthMapData, baseImg, cameraAzimuth, horizonY);
+      const meta = scene.scene_metadata;
+      renderShadows(
+        ctx,
+        w,
+        h,
+        scene.annotations,
+        sol,
+        depthMapData,
+        baseImg,
+        meta.camera_azimuth_deg || 0,
+        horizonY,
+        meta.camera_fov_deg || 65,
+        meta.camera_pitch_deg
+      );
     }
 
     // 3. Draw Schematic Sun Overlay
@@ -310,6 +339,22 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
             </span>
           )}
         </div>
+
+          {onSave && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveHorizon}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"
+              >
+                <span>💾</span> Save Horizon
+              </button>
+              {saveMessage && (
+                <span className="text-xs text-emerald-600 font-bold">{saveMessage}</span>
+              )}
+            </div>
+          )}
+
       </div>
 
       {/* Nighttime / No Shadow Banner */}
@@ -353,7 +398,10 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
             const canvas = canvasRef.current;
             const displayHeight = canvas.clientHeight;
             const naturalHeight = canvas.height || 1;
-            const displayHorizonTop = (horizonY / naturalHeight) * displayHeight;
+            // horizonY may be a normalised fraction (from scene metadata) or a
+            // pixel row (after the user dragged the line). Normalise for display.
+            const horizonPx = horizonY > 0 && horizonY <= 1 ? horizonY * naturalHeight : horizonY;
+            const displayHorizonTop = (horizonPx / naturalHeight) * displayHeight;
 
             return (
               <div
@@ -366,7 +414,7 @@ export const ShadowPreview: React.FC<ShadowPreviewProps> = ({
               >
                 <div className="w-full border-t-2 border-dashed border-red-500 group-hover:border-red-400 transition shadow-[0_0_4px_rgba(239,68,68,0.8)]"></div>
                 <span className="absolute right-3 bg-red-600 text-white font-mono text-[11px] px-2 py-0.5 rounded shadow-md pointer-events-none">
-                  Horizon Level: {horizonY}px
+                  Horizon Level: {Math.round(horizonPx)}px
                 </span>
               </div>
             );
