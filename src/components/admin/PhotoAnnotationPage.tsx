@@ -42,10 +42,8 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
           const initial: SceneAnnotation = {
             scene_metadata: {
               scene_id: `${playgroundId}_${photoId}`,
-              original_image_path: `/api/playgrounds/${playgroundId}/photo/${currentPhoto.filename}`,
-              depth_map_path: currentPhoto.depth_map_filename
-                ? `/api/playgrounds/${playgroundId}/photo/${currentPhoto.depth_map_filename}`
-                : '',
+              original_image_path: currentPhoto.photoUrl ?? '',
+              depth_map_path: currentPhoto.depthMapUrl ?? '',
               camera_azimuth_deg: currentPhoto.camera_azimuth_deg || 0,
               camera_fov_deg: currentPhoto.camera_fov_deg || 65,
             },
@@ -98,10 +96,8 @@ export const PhotoAnnotationPage: React.FC<PhotoAnnotationPageProps> = ({
     );
   }
 
-  const imageUrl = `/api/playgrounds/${playgroundId}/photo/${photo.filename}`;
-  const depthMapUrl = photo.depth_map_filename
-    ? `/api/playgrounds/${playgroundId}/photo/${photo.depth_map_filename}`
-    : '';
+  const imageUrl = photo.photoUrl ?? '';
+  const depthMapUrl = photo.depthMapUrl ?? '';
 
   return (
     <div className="space-y-6">

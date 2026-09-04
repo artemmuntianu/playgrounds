@@ -41,10 +41,8 @@ export const ShadowPhotoGrid: React.FC<ShadowPhotoGridProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {photos.map((photo, index) => {
               const isThumb = thumbnailPhotoId === photo.id;
-              const photoUrl = `/api/playgrounds/${playgroundId}/photo/${photo.filename}`;
-              const depthUrl = photo.depth_map_filename
-                ? `/api/playgrounds/${playgroundId}/photo/${photo.depth_map_filename}`
-                : null;
+              const photoUrl = photo.photoUrl ?? '';
+              const depthUrl = photo.depthMapUrl ?? null;
 
               return (
                 <div

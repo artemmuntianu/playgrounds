@@ -110,6 +110,12 @@ export interface PlaygroundPhoto {
   scene_id?: string;
   /** True if this is an additional photo without shadow simulation */
   is_additional?: boolean;
+  /** Resolved public Vercel Blob URL for the photo (server-computed; not stored in DB). */
+  photoUrl?: string;
+  /** Resolved public Vercel Blob URL for the depth map (server-computed; not stored in DB). */
+  depthMapUrl?: string;
+  /** Resolved public Vercel Blob URL for the semantic mask (server-computed; not stored in DB). */
+  segMaskUrl?: string;
 }
 
 /** Shadow/sun attributes for a playground */

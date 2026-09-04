@@ -28,10 +28,9 @@ export function getWeatherCacheKey(lat: number, lon: number, date: string): stri
 export async function fetchWeatherDay(
   lat: number,
   lon: number,
-  opts?: { useFixture?: boolean; date?: string }
+  opts?: { date?: string }
 ): Promise<WeatherDayHourly> {
   const query = new URLSearchParams({ lat: String(lat), lon: String(lon) });
-  if (opts?.useFixture) query.set('useFixture', '1');
   if (opts?.date) query.set('date', opts.date);
   const res = await fetch(`${BASE}?${query.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch weather');
@@ -64,14 +63,11 @@ export function useWeather(
   lon: number,
   minutes: number,
   date?: string,
-  opts?: { useFixture?: boolean }
 ): { weather: WeatherSnapshot | null; loading: boolean; error: string | null } {
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
-  const optsRef = useRef(opts);
-  optsRef.current = opts;
 
   useEffect(() => {
     setLoading(true);
@@ -94,7 +90,7 @@ export function useWeather(
 
         let promise = inFlight.get(key);
         if (!promise) {
-          promise = fetchWeatherDay(lat, lon, { useFixture: optsRef.current?.useFixture, date });
+          promise = fetchWeatherDay(lat, lon, { date });
           inFlight.set(key, promise);
           promise.finally(() => inFlight.delete(key));
         }

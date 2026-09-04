@@ -109,7 +109,7 @@ export const EquipmentMarkerPage: React.FC<EquipmentMarkerPageProps> = ({ playgr
     }
   };
 
-  const imageUrl = activePhoto ? `/api/playgrounds/${playgroundId}/photo/${activePhoto.filename}` : '';
+  const imageUrl = activePhoto?.photoUrl ?? '';
 
   if (loading) {
     return (
@@ -173,7 +173,7 @@ export const EquipmentMarkerPage: React.FC<EquipmentMarkerPageProps> = ({ playgr
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Photos:</span>
             {(shadowPhotos.length ? shadowPhotos : playground.photos).map((photo) => {
-              const ts = `/api/playgrounds/${playgroundId}/photo/${photo.filename}`;
+              const ts = photo.photoUrl ?? '';
               const active = activePhotoId === photo.id;
               return (
                 <button

@@ -37,7 +37,7 @@ export const AdditionalPhotoGrid: React.FC<AdditionalPhotoGridProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {photos.map((photo, index) => {
               const isThumb = thumbnailPhotoId === photo.id;
-              const photoUrl = `/api/playgrounds/${playgroundId}/photo/${photo.filename}`;
+              const photoUrl = photo.photoUrl ?? '';
 
               return (
                 <div

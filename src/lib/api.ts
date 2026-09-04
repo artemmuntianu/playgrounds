@@ -156,9 +156,3 @@ export async function savePlaygroundSceneApi(
   if (!res.ok) throw new Error('Failed to save scene');
 }
 
-export function getPhotoUrl(
-  playgroundId: string,
-  filename: string,
-): string {
-  return `${BASE}/${playgroundId}/photo/${filename}`;
-}

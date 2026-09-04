@@ -215,15 +215,9 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
     : [];
   const markerCount = activeMarkers.length;
 
-  const currentPhotoUrl = activePhoto
-    ? `/api/playgrounds/${playground.id}/photo/${activePhoto.filename}`
-    : '';
-  const currentDepthUrl = activePhoto?.depth_map_filename
-    ? `/api/playgrounds/${playground.id}/photo/${activePhoto.depth_map_filename}`
-    : '';
-  const currentSegUrl = activePhoto?.semantic_mask_filename
-    ? `/api/playgrounds/${playground.id}/photo/${activePhoto.semantic_mask_filename}`
-    : '';
+  const currentPhotoUrl = activePhoto?.photoUrl ?? '';
+  const currentDepthUrl = activePhoto?.depthMapUrl ?? '';
+  const currentSegUrl = activePhoto?.segMaskUrl ?? '';
 
   const isCurrentPhotoAdditional = !!activePhoto?.is_additional;
 
@@ -322,7 +316,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
             <div className="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">
               {playground.photos.map((photo, i) => {
                 const isSelected = activePhoto?.id === photo.id;
-                const thumbUrl = `/api/playgrounds/${playground.id}/photo/${photo.filename}`;
+                const thumbUrl = photo.photoUrl ?? '';
 
                 return (
                   <button

@@ -17,12 +17,11 @@ overlays. Two audiences:
 
 ## 2. Tech stack (source of truth: `package.json`)
 
-- Astro **^7.2.9**, **Node adapter**, `output: 'server'`, `mode: 'standalone'` (SSR, `node dist/server/entry.mjs`).
-- React **18.3** (client islands), Tailwind **3.4** (inline utility classes).
+- Astro **^7.2.9**, **Vercel adapter** (`@astrojs/vercel`), `output: 'server'` (SSR on Vercel).
+- React **18.3** (client islands), Tailwind **4** (inline utility classes, `@tailwindcss/vite`).
 - TypeScript **strict**, `moduleResolution: bundler`, `jsx: react-jsx`.
-- `@supabase/supabase-js` (persistence). No other external services are required at runtime
-  (weather is proxied from Open-Meteo; no API key).
-- `npm run build` → `astro build`, `npm start` → `node dist/server/entry.mjs`.
+- `@supabase/supabase-js` (metadata persistence) + `@vercel/blob` (image binaries).
+- `npm run build` → `astro build` (deployed to Vercel; no `node dist/server/entry.mjs`).
 
 > Note: the older note "Astro 5" is stale — `package.json` is authoritative.
 
@@ -44,11 +43,14 @@ Rules that MUST hold:
   → `/api/...` → `lib/playgroundStorage` / `lib/supabase`. Single write path.
 - **Supabase is the single source of truth for ALL metadata** (playgrounds, photo meta,
   equipment, scenes, reference catalog). There is **no** filesystem fallback for metadata anymore.
-- **Image binaries** (photos, depth maps, seg masks) live only on the local FS at
-  `data/playgrounds/<id>/photos/`, served via `/api/playgrounds/[id]/photo/[...filename]`.
-- **Env**: Supabase creds come from `.env.local` (git-ignored). Server reads them into
-  `process.env` at runtime (`lib/supabase.ts`). `isSupabaseConfigured()` is true only when
-  `SUPABASE_URL` + `SUPABASE_SECRET_KEY` are set.
+- **Image binaries** (photos, depth maps, seg masks) live in **Vercel Blob** (`@vercel/blob`),
+  uploaded under pathnames `playgrounds/<id>/photos/<filename>` and served natively from Vercel's
+  CDN. The DB stores bare filenames; `getPhotoUrl()` resolves them to public Blob URLs at the
+  API/SSR boundary.
+- **Env**: Supabase creds (`SUPABASE_URL`, `SUPABASE_KEY`/`SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`)
+  and the Vercel Blob token (`BLOB_READ_WRITE_TOKEN`) are read from `process.env` at runtime
+  (`lib/supabase.ts`, `lib/playgroundStorage/blob.ts`). On Vercel these come from the project env
+  (Production + Preview); locally from `.env.local` / `.env` (git-ignored).
 
 ## 4. Security & config rules
 
@@ -74,8 +76,7 @@ Rules that MUST hold:
 6. **Equipment reference vocabulary lives in the DB** (`age_groups`, `equipment_categories`,
    `equipment_catalog`), served by `/api/reference` and cached client-side in `lib/equipment.ts`
    (falls back to raw ids when empty). The old static `equipmentCatalog.ts` is gone.
-7. **Weather** is proxied from Open-Meteo (no API key) via `/api/weather`; `data/weather_fixture.json`
-   is the offline fixture (`useFixture=1` / `USE_WEATHER_FIXTURE=1`).
+7. **Weather** is proxied from Open-Meteo (no API key) via `/api/weather`.
 
 ## 6. What was removed (legacy / filesystem fallbacks)
 
@@ -97,8 +98,8 @@ The schema lives in `scripts/generate-ddl.sql` and the reference vocabulary seed
 ## 7. Conventions worth repeating
 
 - `package.json` is authoritative for the framework version (currently Astro `^7.2.9`).
-- Supabase is **required**. Only image binaries
-  (photos / depth maps / seg masks) live on the local FS under `data/playgrounds/<id>/photos/`.
+- Supabase is **required**. Image binaries
+  (photos / depth maps / seg masks) live in **Vercel Blob** under `playgrounds/<id>/photos/`.
 
 ## 8. Keeping this doc in sync
 

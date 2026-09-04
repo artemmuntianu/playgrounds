@@ -1,8 +1,7 @@
 // Playground persistence module.
-// All data (playground metadata, photos metadata, equipment, scenes, reference catalog)
-// routes through `repo` (the Supabase database). Only image binaries (photos/depth/seg)
-// stay on the file system via `photos` + `paths`.
-export { BASE_DIR, ensureBaseDir, playgroundDir } from './paths';
+// Metadata (playgrounds, photos meta, equipment, scenes, reference catalog) lives in Supabase
+// via `repo`. Image binaries (photos/depth/seg) live in **Vercel Blob** (see `blob.ts`); the DB
+// keeps the bare filenames and `getPhotoUrl()` resolves them to public CDN URLs.
 export { slugify } from './slugify';
 export {
   listPlaygrounds,
@@ -18,6 +17,5 @@ export {
   savePlaygroundDepthMap,
   savePlaygroundSegMask,
   deletePlaygroundPhoto,
-  getPhotoUrl,
-  getPhotoPath,
 } from './photos';
+export { getPhotoUrl } from './blob';

@@ -12,9 +12,8 @@ The **only** server surface the browser talks to. Every client data flow starts 
 | `/api/playgrounds/[id]/photos` | POST, DELETE | upload photo (+depth+seg) / delete photo | `playgroundStorage.photos` |
 | `/api/playgrounds/[id]/depth` | POST | attach a depth map to a photo | `playgroundStorage.photos` |
 | `/api/playgrounds/[id]/scenes/[photoId]` | GET, POST | read/write scene annotation | `db.get/savePlaygroundScene` |
-| `/api/playgrounds/[id]/photo/[...filename]` | GET | serve image binary (immutable cache) | FS `getPhotoPath` |
 | `/api/reference` | GET | age groups + categories + catalog | `lib/referenceData` |
-| `/api/weather` | GET | Open-Meteo proxy / offline fixture | env config + `data/weather_fixture.json` |
+| `/api/weather` | GET | Open-Meteo proxy | env config |
 
 ## Rules
 
@@ -25,9 +24,7 @@ The **only** server surface the browser talks to. Every client data flow starts 
 - **Photo limit**: max **4 shadow-enabled** photos (`!is_additional`) per playground; beyond that
   only `is_additional` photos are accepted (enforced in `[id]/photos.ts`). `thumbnail_photo_id`
   auto-sets to the uploaded id if the playground had none.
-- The photo-serve route calls `path.basename(filename)` to block directory traversal and maps
-  the content-type from the file extension (`Cache-Control: public, max-age=31536000, immutable`).
-- `GET /api/weather` requires `lat` + `lon`; optional `date` (YYYY-MM-DD) and `useFixture=1`.
+- `GET /api/weather` requires `lat` + `lon`; optional `date` (YYYY-MM-DD).
   Upstream errors → 502. `OPEN_METEO_BASE_URL` is overridable.
 - GET list routes return the array directly (no envelope); detail endpoints return the object or 404.
 

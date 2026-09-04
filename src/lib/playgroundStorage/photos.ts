@@ -1,12 +1,10 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { getPlayground } from './repo';
-import { playgroundDir } from './paths';
+import { putBinary, deleteBinary, getPhotoUrl } from './blob';
 
-/**
- * Save a photo file for a playground.
- * Returns the relative filename (e.g. "photo_1.jpg").
- */
+const photosPathname = (playgroundId: string, filename: string): string =>
+  `playgrounds/${encodeURIComponent(playgroundId)}/photos/${encodeURIComponent(filename)}`;
+
+/** Save a photo to Vercel Blob; returns the bare stored filename (DB stays filename-based). */
 export async function savePlaygroundPhoto(
   playgroundId: string,
   photoId: string,
@@ -15,16 +13,11 @@ export async function savePlaygroundPhoto(
 ): Promise<string> {
   const ext = mimeType === 'image/png' ? '.png' : mimeType === 'image/webp' ? '.webp' : '.jpg';
   const filename = `${photoId}${ext}`;
-  const photosDir = path.join(playgroundDir(playgroundId), 'photos');
-  await fs.mkdir(photosDir, { recursive: true });
-  await fs.writeFile(path.join(photosDir, filename), fileBuffer);
+  await putBinary(photosPathname(playgroundId, filename), fileBuffer, mimeType);
   return filename;
 }
 
-/**
- * Save a depth map image for a playground photo.
- * Returns the relative filename (e.g. "photo_1_depth.png").
- */
+/** Save a depth map to Vercel Blob; returns the bare stored filename. */
 export async function savePlaygroundDepthMap(
   playgroundId: string,
   photoId: string,
@@ -33,16 +26,11 @@ export async function savePlaygroundDepthMap(
 ): Promise<string> {
   const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
   const filename = `${photoId}_depth${ext}`;
-  const photosDir = path.join(playgroundDir(playgroundId), 'photos');
-  await fs.mkdir(photosDir, { recursive: true });
-  await fs.writeFile(path.join(photosDir, filename), fileBuffer);
+  await putBinary(photosPathname(playgroundId, filename), fileBuffer, mimeType);
   return filename;
 }
 
-/**
- * Save a semantic (3-colour) segmentation mask for a playground photo.
- * Returns the relative filename (e.g. "photo_1_seg.png").
- */
+/** Save a semantic segmentation mask to Vercel Blob; returns the bare stored filename. */
 export async function savePlaygroundSegMask(
   playgroundId: string,
   photoId: string,
@@ -51,15 +39,11 @@ export async function savePlaygroundSegMask(
 ): Promise<string> {
   const ext = mimeType === 'image/jpeg' ? '.jpg' : '.png';
   const filename = `${photoId}_seg${ext}`;
-  const photosDir = path.join(playgroundDir(playgroundId), 'photos');
-  await fs.mkdir(photosDir, { recursive: true });
-  await fs.writeFile(path.join(photosDir, filename), fileBuffer);
+  await putBinary(photosPathname(playgroundId, filename), fileBuffer, mimeType);
   return filename;
 }
 
-/**
- * Delete a photo file and associated depth map / scene.
- */
+/** Delete a photo's blobs (photo + optional depth map + optional seg mask). */
 export async function deletePlaygroundPhoto(
   playgroundId: string,
   photoId: string,
@@ -70,43 +54,12 @@ export async function deletePlaygroundPhoto(
   const photo = pg.photos.find((p) => p.id === photoId);
   if (!photo) throw new Error(`Photo '${photoId}' not found`);
 
-  const dir = playgroundDir(playgroundId);
-
-  // Delete the photo file
-  try {
-    await fs.unlink(path.join(dir, 'photos', photo.filename));
-  } catch { /* ignore if file doesn't exist */ }
-
-  // Delete depth map if exists
-  if (photo.depth_map_filename) {
-    try {
-      await fs.unlink(path.join(dir, 'photos', photo.depth_map_filename));
-    } catch { /* ignore */ }
+  const names = [photo.filename, photo.depth_map_filename, photo.semantic_mask_filename].filter(
+    (n): n is string => Boolean(n),
+  );
+  for (const name of names) {
+    const url = await getPhotoUrl(playgroundId, name);
+    if (url) await deleteBinary(url);
   }
-
-  // Delete semantic segmentation mask if exists
-  if (photo.semantic_mask_filename) {
-    try {
-      await fs.unlink(path.join(dir, 'photos', photo.semantic_mask_filename));
-    } catch { /* ignore */ }
-  }
-
-  // Delete scene if exists
-  try {
-    await fs.unlink(path.join(dir, 'scenes', `${photoId}_scene.json`));
-  } catch { /* ignore */ }
 }
 
-/**
- * Get the client-accessible URL for a playground photo.
- */
-export function getPhotoUrl(playgroundId: string, filename: string): string {
-  return `/api/playgrounds/${playgroundId}/photo/${filename}`;
-}
-
-/**
- * Get the absolute filesystem path for a playground photo.
- */
-export function getPhotoPath(playgroundId: string, filename: string): string {
-  return path.join(playgroundDir(playgroundId), 'photos', filename);
-}

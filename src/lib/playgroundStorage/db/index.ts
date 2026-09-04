@@ -11,6 +11,7 @@ import type {
 import type { SceneAnnotation } from '../../../types/shadow';
 import { createServerClient } from '../../supabase';
 import { slugify } from '../slugify';
+import { getPhotoUrl } from '../blob';
 
 // ---------------------------------------------------------------------------
 // Row shapes (mirrors scripts/generate-ddl.sql)
@@ -176,6 +177,25 @@ async function fetchPhotos(
   return ((data ?? []) as PhotoRow[]).map(mapPhoto);
 }
 
+/** Resolve each photo's bare filenames to public Vercel Blob URLs (server-side). */
+async function enrichPhotoUrls(
+  playgroundId: string,
+  photos: PlaygroundPhoto[],
+): Promise<PlaygroundPhoto[]> {
+  return Promise.all(
+    photos.map(async (p) => ({
+      ...p,
+      photoUrl: p.filename ? await getPhotoUrl(playgroundId, p.filename) : undefined,
+      depthMapUrl: p.depth_map_filename
+        ? await getPhotoUrl(playgroundId, p.depth_map_filename)
+        : undefined,
+      segMaskUrl: p.semantic_mask_filename
+        ? await getPhotoUrl(playgroundId, p.semantic_mask_filename)
+        : undefined,
+    })),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Public repo API
 // ---------------------------------------------------------------------------
@@ -212,23 +232,25 @@ export async function listPlaygrounds(): Promise<PlaygroundSummary[]> {
     equipByPg.set(e.playground_id, list);
   }
 
-  return rows.map((row) => {
-    const photos = photosByPg.get(row.id) ?? [];
-    const thumb = photos.find((p) => p.id === row.thumbnail_photo_id);
-    const equipment = equipByPg.get(row.id) ?? [];
-    return {
-      id: row.id,
-      name: l10n(row.name_en, row.name_pt),
-      short_description: l10n(row.short_description_en, row.short_description_pt),
-      location_name: l10n(row.location_name_en, row.location_name_pt),
-      thumbnail_url: thumb ? `/api/playgrounds/${row.id}/photo/${thumb.filename}` : '',
-      attributes: mapAttributes(row),
-      photo_count: photos.length,
-      created_at: row.created_at,
-      equipment_types: [...new Set(equipment.map((e) => e.type))] as PlaygroundSummary['equipment_types'],
-      equipment_age_groups: [...new Set(equipment.map((e) => e.age_group).filter(Boolean))] as AgeGroup[],
-    };
-  });
+  return Promise.all(
+    rows.map(async (row) => {
+      const photos = photosByPg.get(row.id) ?? [];
+      const thumb = photos.find((p) => p.id === row.thumbnail_photo_id);
+      const equipment = equipByPg.get(row.id) ?? [];
+      return {
+        id: row.id,
+        name: l10n(row.name_en, row.name_pt),
+        short_description: l10n(row.short_description_en, row.short_description_pt),
+        location_name: l10n(row.location_name_en, row.location_name_pt),
+        thumbnail_url: thumb ? await getPhotoUrl(row.id, thumb.filename) : '',
+        attributes: mapAttributes(row),
+        photo_count: photos.length,
+        created_at: row.created_at,
+        equipment_types: [...new Set(equipment.map((e) => e.type))] as PlaygroundSummary['equipment_types'],
+        equipment_age_groups: [...new Set(equipment.map((e) => e.age_group).filter(Boolean))] as AgeGroup[],
+      };
+    }),
+  );
 }
 
 export async function getPlayground(id: string): Promise<Playground | null> {
@@ -238,7 +260,8 @@ export async function getPlayground(id: string): Promise<Playground | null> {
   if (!data) return null;
   const row = data as PlaygroundRow;
   const [photos, equipment] = await Promise.all([fetchPhotos(db, id), fetchEquipment(db, id)]);
-  return toPlayground(row, photos, equipment);
+  const enrichedPhotos = await enrichPhotoUrls(id, photos);
+  return toPlayground(row, enrichedPhotos, equipment);
 }
 
 async function resolveUniqueId(db: ReturnType<typeof createServerClient>, base: string): Promise<string> {
