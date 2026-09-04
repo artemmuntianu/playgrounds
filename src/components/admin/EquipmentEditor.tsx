@@ -9,9 +9,12 @@ import {
   AGE_GROUPS,
   AGE_GROUP_LABELS,
   EQUIPMENT_CATALOG,
+  EQUIPMENT_CATEGORIES,
   getCategory,
+  getCategoryLabel,
   getEquipmentLabel,
 } from '../../lib/equipmentCatalog';
+import { EquipmentIcon } from '../EquipmentIcon';
 import { updateEquipmentApi } from '../../lib/api';
 
 interface EquipmentEditorProps {
@@ -27,7 +30,30 @@ const CATEGORY_EMOJI: Record<EquipmentCategoryId, string> = {
   sport_complex: '🧗',
   development: '🧸',
   rest: '🪑',
+  exploration: '🧭',
+  fitness: '🏋️',
+  creativity: '🎨',
+  amenities: '🚰',
+  sensory_play: '🧩',
+  adventure_course: '🧗',
+  nature_play: '🌿',
+  gathering_hub: '🧺',
+  inclusive_play: '♿',
+  toddler_zone: '🍼',
+  interactive_elements: '✨',
+  expanded_amenities: '🔌',
+  tech_play: '📱',
+  water_features: '💧',
+  imaginative_stages: '🎭',
+  eco_garden: '🌱',
+  sports_zone: '⚽',
+  learning_elements: '🔤',
+  maintenance_safety: '🛡️',
+  functional_zones: '📍',
 };
+
+const LIST_ICON_SIZE = 50;
+const FULL_ICON_SIZE = 100;
 
 export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
   playgroundId,
@@ -38,6 +64,7 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [search, setSearch] = useState('');
 
   const mutate = (updater: (prev: PlaygroundEquipmentItem[]) => PlaygroundEquipmentItem[]) => {
     setEquipment(updater);
@@ -122,41 +149,109 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
 
       {/* Add from catalog, grouped by category */}
       <div className="space-y-4">
-        {CATEGORIES.map((cat) => (
-          <div key={cat} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-            <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <span>{CATEGORY_EMOJI[cat]}</span> {cat}
+        <div>
+          <h4 className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2">
+            Add elements
+          </h4>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search elements by name…"
+            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+          />
+        </div>
+
+        {EQUIPMENT_CATEGORIES.map((cat) => {
+          const matches = EQUIPMENT_CATALOG.filter((e) => {
+            if (e.category !== cat) return false;
+            if (!search.trim()) return true;
+            const q = search.trim().toLowerCase();
+            return (
+              e.label.en.toLowerCase().includes(q) ||
+              e.label.pt.toLowerCase().includes(q)
+            );
+          });
+          if (matches.length === 0) return null;
+          return (
+            <div key={cat} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <span>{CATEGORY_EMOJI[cat]}</span> {getCategoryLabel(cat).en}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {matches.map((entry) => (
+                  <button
+                    key={entry.type}
+                    type="button"
+                    onClick={() => addItem(entry.type)}
+                    title={`Add ${entry.label.en} — hover to see full size`}
+                    className="group flex items-center gap-2.5 px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700 transition"
+                  >
+                    <span className="relative shrink-0 inline-flex items-center justify-center w-[50px] h-[50px]">
+                      <EquipmentIcon type={entry.type} size={LIST_ICON_SIZE} />
+                      <span className="pointer-events-none absolute top-full left-1/2 z-30 hidden group-hover:flex mt-2 -translate-x-1/2 p-2 bg-white border border-slate-300 rounded-xl shadow-xl">
+                        <EquipmentIcon type={entry.type} size={FULL_ICON_SIZE} />
+                      </span>
+                    </span>
+                    <span className="truncate">+ {entry.label.en}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {EQUIPMENT_CATALOG.filter((e) => e.category === cat).map((entry) => (
-                <button
-                  key={entry.type}
-                  type="button"
-                  onClick={() => addItem(entry.type)}
-                  className="px-3 py-1.5 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700 transition"
-                >
-                  + {entry.label.en}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
+
+        {search.trim() && EQUIPMENT_CATALOG.filter((e) => {
+          const q = search.trim().toLowerCase();
+          return e.label.en.toLowerCase().includes(q) || e.label.pt.toLowerCase().includes(q);
+        }).length === 0 && (
+          <p className="text-xs text-slate-400 italic">
+            No elements match “{search.trim()}”.
+          </p>
+        )}
       </div>
 
       {/* Existing equipment list */}
       {equipment.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-visible">
           <div className="px-4 py-2.5 border-b border-slate-100 text-xs font-extrabold text-slate-600 uppercase tracking-wide">
             Current elements
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
             {equipment.map((it) => (
-              <div key={it.id} className="p-3 flex flex-col md:flex-row md:items-center gap-3">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-lg">{CATEGORY_EMOJI[getCategory(it.type)]}</span>
-                  <span className="text-sm font-bold text-slate-800 truncate">
-                    {getEquipmentLabel(it.type).en}
-                  </span>
+              <div
+                key={it.id}
+                className="p-3 flex flex-col gap-3 border border-slate-100 bg-slate-50/50 rounded-xl"
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <button
+                    type="button"
+                    title={`${it.custom_name?.en || getEquipmentLabel(it.type).en} — hover to see full size`}
+                    className="group relative shrink-0 inline-flex items-center justify-center w-[50px] h-[50px] rounded-lg border border-slate-200 bg-white hover:border-violet-300 hover:shadow transition"
+                  >
+                    <EquipmentIcon type={it.type} size={LIST_ICON_SIZE} />
+                    <span className="pointer-events-none absolute top-full left-1/2 z-30 hidden group-hover:flex mt-2 -translate-x-1/2 p-2 bg-white border border-slate-300 rounded-xl shadow-xl">
+                      <EquipmentIcon type={it.type} size={FULL_ICON_SIZE} />
+                    </span>
+                  </button>
+
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <span className="text-sm font-bold text-slate-800 truncate">
+                      {it.custom_name?.en || getEquipmentLabel(it.type).en}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 px-1.5 py-0.5 rounded w-fit">
+                      {getCategoryLabel(getCategory(it.type)).en}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => removeItem(it.id)}
+                    className="text-red-500 hover:text-red-700 font-bold px-1 shrink-0 self-start"
+                    title="Remove"
+                  >
+                    🗑️
+                  </button>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -185,17 +280,8 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
                       }))
                     }
                     placeholder="Custom name (EN, optional)"
-                    className="px-2 py-1 text-xs border border-slate-300 rounded-lg bg-white w-44"
+                    className="px-2 py-1 text-xs border border-slate-300 rounded-lg bg-white flex-1 min-w-[140px]"
                   />
-
-                  <button
-                    type="button"
-                    onClick={() => removeItem(it.id)}
-                    className="text-red-500 hover:text-red-700 font-bold px-2"
-                    title="Remove"
-                  >
-                    🗑️
-                  </button>
                 </div>
               </div>
             ))}

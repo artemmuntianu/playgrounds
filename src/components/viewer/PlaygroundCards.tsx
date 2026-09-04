@@ -1,17 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { AgeGroup, EquipmentCategoryId, PlaygroundSummary } from '../../types/playground';
 import { fetchPlaygrounds } from '../../lib/api';
-import { t, type Locale, type TranslationKey } from '../../lib/i18n';
-import { AGE_GROUPS, AGE_GROUP_LABELS, getCategory } from '../../lib/equipmentCatalog';
-
-const EQUIP_CATEGORIES: EquipmentCategoryId[] = ['ride_balance', 'sport_complex', 'development', 'rest'];
-
-const EQUIP_CAT_KEY: Record<EquipmentCategoryId, TranslationKey> = {
-  ride_balance: 'equipment.cat.ride_balance',
-  sport_complex: 'equipment.cat.sport_complex',
-  development: 'equipment.cat.development',
-  rest: 'equipment.cat.rest',
-};
+import { t, type Locale } from '../../lib/i18n';
+import { AGE_GROUPS, AGE_GROUP_LABELS, EQUIPMENT_CATEGORIES, getCategory, getCategoryLabel } from '../../lib/equipmentCatalog';
 
 export const PlaygroundCards: React.FC = () => {
   const [playgrounds, setPlaygrounds] = useState<PlaygroundSummary[]>([]);
@@ -138,9 +129,9 @@ export const PlaygroundCards: React.FC = () => {
               className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
             >
               <option value="all">🧩 {t('master.filter_any', lang)}</option>
-              {EQUIP_CATEGORIES.map((c) => (
+              {EQUIPMENT_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  🧩 {t(EQUIP_CAT_KEY[c], lang)}
+                  🧩 {getCategoryLabel(c)[lang]}
                 </option>
               ))}
             </select>

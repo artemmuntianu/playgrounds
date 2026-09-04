@@ -4,7 +4,7 @@ import type { SceneAnnotation } from '../../types/shadow';
 import { fetchPlayground, fetchScene } from '../../lib/api';
 import { ViewerShadowCanvas, type EquipmentMarkerDisplay } from './ViewerShadowCanvas';
 import { t, formatDayLabel, type Locale } from '../../lib/i18n';
-import { AGE_GROUP_LABELS, getCategory, getEquipmentLabel } from '../../lib/equipmentCatalog';
+import { AGE_GROUP_LABELS, getCategory, getEquipmentLabel, getEquipmentIcon } from '../../lib/equipmentCatalog';
 import { getSolarPosition } from '../../lib/solar';
 import {
   useWeather,
@@ -190,6 +190,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
               y: m.y,
               label,
               category: getCategory(item.type),
+              icon: getEquipmentIcon(item.type),
             };
           }),
       )

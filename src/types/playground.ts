@@ -13,7 +13,19 @@ export type AgeGroup =
   | 'all';
 
 /** High-level grouping of playground equipment. */
-export type EquipmentCategoryId = 'ride_balance' | 'sport_complex' | 'development' | 'rest';
+export type EquipmentCategoryId =
+  // existing
+  | 'ride_balance' | 'sport_complex' | 'development' | 'rest'
+  // pack 2
+  | 'exploration' | 'fitness' | 'creativity' | 'amenities'
+  // pack 3
+  | 'sensory_play' | 'adventure_course' | 'nature_play' | 'gathering_hub'
+  // pack 4
+  | 'inclusive_play' | 'toddler_zone' | 'interactive_elements' | 'expanded_amenities'
+  // pack 5
+  | 'tech_play' | 'water_features' | 'imaginative_stages' | 'eco_garden'
+  // pack 6
+  | 'sports_zone' | 'learning_elements' | 'maintenance_safety' | 'functional_zones';
 
 /** Concrete element types an operator can place on a playground. */
 export type EquipmentTypeId =
@@ -24,7 +36,47 @@ export type EquipmentTypeId =
   // development
   | 'sandbox' | 'busy_board' | 'playhouse' | 'abacus'
   // rest
-  | 'bench' | 'trash_bin' | 'canopy';
+  | 'bench' | 'trash_bin' | 'canopy'
+  // exploration
+  | 'zip_line' | 'standing_spinner' | 'spring_rider' | 'climbing_dome' | 'tunnel'
+  // fitness
+  | 'gymnastic_rings' | 'basketball_hoop' | 'climbing_rope' | 'balance_beam' | 'slackline' | 'step_stones'
+  // creativity
+  | 'water_table' | 'outdoor_chalkboard' | 'stone_path' | 'telescope'
+  // amenities
+  | 'drinking_fountain' | 'stroller_parking'
+  // sensory play
+  | 'music_xylophone' | 'tactile_panel' | 'optical_illusion_panel' | 'tic_tac_toe_wall'
+  // adventure course
+  | 'in_ground_trampoline' | 'tire_obstacle_course' | 'rope_bridge' | 'jump_rope_station' | 'sitting_logs' | 'stone_slide' | 'natural_climbing_area'
+  // nature play
+  | 'sensory_garden_bed' | 'birdhouse_feeder'
+  // gathering hub
+  | 'picnic_table_canopy' | 'round_tree_bench' | 'table_game_station' | 'community_toy_box' | 'pet_water_fountain'
+  // inclusive play
+  | 'wheelchair_swing' | 'platform_swing' | 'accessible_play_table' | 'large_print_panel' | 'accessible_seating'
+  // toddler zone
+  | 'mini_slide' | 'bee_spring_rider' | 'crawling_tunnel' | 'soft_play_modules' | 'sand_play_table' | 'toddler_book_nook'
+  // interactive elements
+  | 'sound_effect_board' | 'solar_sensor_post' | 'musical_pipes' | 'sand_drawing_board'
+  // expanded amenities
+  | 'charging_station' | 'u_rack_bike_parking' | 'modern_park_light' | 'bike_repair_station'
+  // tech play
+  | 'smart_gate' | 'digital_game_screen' | 'interactive_path' | 'ar_info_panel' | 'kinetic_power_station'
+  // water features
+  | 'cascade_stream' | 'flower_sprinkler' | 'water_wheel' | 'market_stall' | 'pedal_pump' | 'sand_water_table'
+  // imaginative stages
+  | 'amphitheater_stage' | 'lookout_tower' | 'castle_rampart' | 'submarine_play'
+  // eco garden
+  | 'compost_bin' | 'insect_hotel' | 'greenhouse_dome' | 'eco_signage'
+  // sports zone
+  | 'multisport_court' | 'soccer_pitch' | 'calisthenics_frame'
+  // learning elements
+  | 'alphabet_panel' | 'number_wall' | 'compass_floor_design' | 'musical_notes_panel'
+  // maintenance & safety
+  | 'hand_sanitizer' | 'recycling_bin' | 'surveillance_camera' | 'first_aid_station'
+  // functional zones
+  | 'parent_seating' | 'dog_park_zone' | 'shade_structure';
 
 /** A single dot-marker on a photo (normalised 0..1 within the photo). */
 export interface PhotoMarker {

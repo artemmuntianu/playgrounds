@@ -8,6 +8,7 @@ import { loadSegmentationMask } from '../../lib/segmentation';
 import { renderSegmentedScene } from '../../lib/segRenderer';
 import type { ShadowCameraParams } from '../../lib/shadowProjection';
 import type { SegmentationData } from '../../types/segmentation';
+import { getCategoryColor } from '../../lib/equipmentCatalog';
 
 /** A dot-marker to overlay onto the photo (normalised 0..1 coordinates). */
 export interface EquipmentMarkerDisplay {
@@ -15,6 +16,8 @@ export interface EquipmentMarkerDisplay {
   y: number;
   label: string;
   category: string;
+  /** Optional icon URL drawn beside the label. */
+  icon?: string;
 }
 
 interface ViewerShadowCanvasProps {
@@ -33,14 +36,25 @@ interface ViewerShadowCanvasProps {
 }
 
 const CATEGORY_COLOR: Record<string, string> = {
-  ride_balance: '#f59e0b',
-  sport_complex: '#3b82f6',
-  development: '#8b5cf6',
-  rest: '#10b981',
   default: '#047857',
 };
 
 /** Draw dot markers + labels, using the image's native pixel size as the canvas basis. */
+/** Module-level cache of marker icons so we can draw them on the canvas. */
+const iconCache = new Map<string, HTMLImageElement>();
+
+function ensureIcon(url?: string): HTMLImageElement | undefined {
+  if (!url) return undefined;
+  let img = iconCache.get(url);
+  if (!img) {
+    img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    iconCache.set(url, img);
+  }
+  return img;
+}
+
 function drawEquipmentMarkers(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -50,7 +64,7 @@ function drawEquipmentMarkers(
   for (const m of markers) {
     const px = Math.min(Math.max(m.x, 0), 1) * w;
     const py = Math.min(Math.max(m.y, 0), 1) * h;
-    const color = CATEGORY_COLOR[m.category] ?? CATEGORY_COLOR.default;
+    const color = getCategoryColor(m.category);
 
     // Pin / dot
     ctx.beginPath();
@@ -67,11 +81,17 @@ function drawEquipmentMarkers(
     ctx.fillStyle = '#ffffff';
     ctx.fill();
 
-    // Label box
+    // Icon (if loaded) + label box
     const label = m.label;
+    const icon = ensureIcon(m.icon);
+    const iconReady = icon && icon.complete && icon.naturalWidth > 0;
+    const ICON = 16;
+    const GAP = 4;
+    const iconW = iconReady ? ICON : 0;
+
     ctx.font = 'bold 13px system-ui, sans-serif';
     const textW = ctx.measureText(label).width;
-    const boxW = textW + 12;
+    const boxW = textW + 12 + (iconW ? iconW + GAP : 0);
     const boxH = 20;
     const boxX = Math.min(Math.max(px + 10, 4), Math.max(w - boxW - 4, 4));
     const boxY = Math.max(py - boxH - 6, 4);
@@ -80,9 +100,15 @@ function drawEquipmentMarkers(
     ctx.beginPath();
     ctx.roundRect(boxX, boxY, boxW, boxH, 6);
     ctx.fill();
+
+    let cursorX = boxX + 6;
+    if (icon) {
+      ctx.drawImage(icon, cursorX, boxY + (boxH - ICON) / 2, ICON, ICON);
+      cursorX += iconW + GAP;
+    }
     ctx.fillStyle = '#ffffff';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, boxX + 6, boxY + boxH / 2 + 0.5);
+    ctx.fillText(label, cursorX, boxY + boxH / 2 + 0.5);
   }
 }
 
@@ -227,6 +253,18 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   useEffect(() => {
     render();
   }, [simulatedTimeMinutes, scene, latitude, longitude, depthMapData, isAdditional, weather, effects, segData]);
+
+  // Redraw when a marker icon finishes loading.
+  useEffect(() => {
+    const imgs = equipmentMarkers
+      .map((m) => ensureIcon(m.icon))
+      .filter((i): i is HTMLImageElement => !!i && !i.complete);
+    imgs.forEach((im) => {
+      im.onload = () => render();
+      im.onerror = () => undefined;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equipmentMarkers]);
 
   const render = () => {
     const canvas = canvasRef.current;

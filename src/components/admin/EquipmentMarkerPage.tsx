@@ -3,7 +3,8 @@ import type { Playground, PlaygroundEquipmentItem } from '../../types/playground
 import { fetchPlayground, updateEquipmentApi } from '../../lib/api';
 import { EquipmentMarkerCanvas } from '../annotation/EquipmentMarkerCanvas';
 import type { EquipmentMarkerDisplay } from '../viewer/ViewerShadowCanvas';
-import { getCategory, getEquipmentLabel } from '../../lib/equipmentCatalog';
+import { getCategory, getEquipmentLabel, getCategoryLabel, getEquipmentIcon } from '../../lib/equipmentCatalog';
+import { EquipmentIcon } from '../EquipmentIcon';
 
 interface EquipmentMarkerPageProps {
   playgroundId: string;
@@ -52,6 +53,7 @@ export const EquipmentMarkerPage: React.FC<EquipmentMarkerPageProps> = ({ playgr
             y: m.y,
             label: item.custom_name?.en || getEquipmentLabel(item.type).en,
             category: getCategory(item.type),
+            icon: getEquipmentIcon(item.type),
           })),
       )
     : [];
@@ -216,10 +218,13 @@ export const EquipmentMarkerPage: React.FC<EquipmentMarkerPageProps> = ({ playgr
                         : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <span className="truncate">
-                      <span className="font-bold text-slate-800">{it.custom_name?.en || getEquipmentLabel(it.type).en}</span>
-                      <span className="ml-1.5 text-slate-400">({getCategory(it.type)})</span>
-                      <span className="ml-1.5 text-slate-500">• {onPhoto} marker{onPhoto !== 1 ? 's' : ''}</span>
+                    <span className="flex items-center gap-1.5">
+                      <EquipmentIcon type={it.type} size={16} />
+                      <span className="truncate">
+                        <span className="font-bold text-slate-800">{it.custom_name?.en || getEquipmentLabel(it.type).en}</span>
+                        <span className="ml-1.5 text-slate-400">({getCategoryLabel(getCategory(it.type)).en})</span>
+                        <span className="ml-1.5 text-slate-500">• {onPhoto} marker{onPhoto !== 1 ? 's' : ''}</span>
+                      </span>
                     </span>
                     {active && <span className="text-violet-600 font-bold text-sm">✏️</span>}
                   </div>

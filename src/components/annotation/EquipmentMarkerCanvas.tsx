@@ -4,6 +4,7 @@ import {
   normToCanvasPx,
 } from '../../lib/annotationCoords';
 import type { EquipmentMarkerDisplay } from '../viewer/ViewerShadowCanvas';
+import { getCategoryColor } from '../../lib/equipmentCatalog';
 
 interface EquipmentMarkerCanvasProps {
   imageUrl: string;
@@ -12,13 +13,19 @@ interface EquipmentMarkerCanvasProps {
   selectable: boolean;
 }
 
-const CATEGORY_COLOR: Record<string, string> = {
-  ride_balance: '#f59e0b',
-  sport_complex: '#3b82f6',
-  development: '#8b5cf6',
-  rest: '#10b981',
-  default: '#047857',
-};
+const iconCache = new Map<string, HTMLImageElement>();
+
+function ensureIcon(url?: string): HTMLImageElement | undefined {
+  if (!url) return undefined;
+  let img = iconCache.get(url);
+  if (!img) {
+    img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    iconCache.set(url, img);
+  }
+  return img;
+}
 
 export const EquipmentMarkerCanvas: React.FC<EquipmentMarkerCanvasProps> = ({
   imageUrl,
@@ -49,7 +56,7 @@ export const EquipmentMarkerCanvas: React.FC<EquipmentMarkerCanvasProps> = ({
 
     for (const m of markers) {
       const p = normToCanvasPx({ x: m.x, y: m.y }, canvas, img);
-      const color = CATEGORY_COLOR[m.category] ?? CATEGORY_COLOR.default;
+      const color = getCategoryColor(m.category);
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
@@ -65,8 +72,14 @@ export const EquipmentMarkerCanvas: React.FC<EquipmentMarkerCanvasProps> = ({
       ctx.fill();
 
       ctx.font = 'bold 13px system-ui, sans-serif';
-      const textW = ctx.measureText(m.label).width;
-      const boxW = textW + 12;
+      const label = m.label;
+      const icon = ensureIcon(m.icon);
+      const iconReady = icon && icon.complete && icon.naturalWidth > 0;
+      const ICON = 16;
+      const GAP = 4;
+      const iconW = iconReady ? ICON : 0;
+      const textW = ctx.measureText(label).width;
+      const boxW = textW + 12 + (iconW ? iconW + GAP : 0);
       const boxH = 20;
       const boxX = Math.min(Math.max(p.x + 11, 4), Math.max(baseW - boxW - 4, 4));
       const boxY = Math.max(p.y - boxH - 6, 4);
@@ -74,9 +87,14 @@ export const EquipmentMarkerCanvas: React.FC<EquipmentMarkerCanvasProps> = ({
       ctx.beginPath();
       ctx.roundRect(boxX, boxY, boxW, boxH, 6);
       ctx.fill();
+      let cursorX = boxX + 6;
+      if (icon) {
+        ctx.drawImage(icon, cursorX, boxY + (boxH - ICON) / 2, ICON, ICON);
+        cursorX += iconW + GAP;
+      }
       ctx.fillStyle = '#ffffff';
       ctx.textBaseline = 'middle';
-      ctx.fillText(m.label, boxX + 6, boxY + boxH / 2 + 0.5);
+      ctx.fillText(label, cursorX, boxY + boxH / 2 + 0.5);
     }
   };
 
@@ -84,6 +102,18 @@ export const EquipmentMarkerCanvas: React.FC<EquipmentMarkerCanvasProps> = ({
     draw();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl, markers]);
+
+  // Redraw when a marker icon finishes loading.
+  useEffect(() => {
+    const imgs = markers
+      .map((m) => ensureIcon(m.icon))
+      .filter((i): i is HTMLImageElement => !!i && !i.complete);
+    imgs.forEach((im) => {
+      im.onload = () => draw();
+      im.onerror = () => undefined;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markers]);
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!selectable) return;
