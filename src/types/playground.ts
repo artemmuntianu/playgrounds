@@ -23,7 +23,7 @@ export type EquipmentCategoryId =
   // pack 4
   | 'inclusive_play' | 'toddler_zone' | 'interactive_elements' | 'expanded_amenities'
   // pack 5
-  | 'tech_play' | 'water_features' | 'imaginative_stages' | 'eco_garden'
+  | 'tech_play' | 'water_features' | 'imaginative_stages'
   // pack 6
   | 'sports_zone' | 'learning_elements' | 'maintenance_safety' | 'functional_zones';
 
@@ -52,31 +52,29 @@ export type EquipmentTypeId =
   // nature play
   | 'sensory_garden_bed' | 'birdhouse_feeder'
   // gathering hub
-  | 'picnic_table_canopy' | 'round_tree_bench' | 'table_game_station' | 'community_toy_box' | 'pet_water_fountain'
+  | 'picnic_table_canopy' | 'table_game_station' | 'pet_water_fountain'
   // inclusive play
-  | 'wheelchair_swing' | 'platform_swing' | 'accessible_play_table' | 'large_print_panel' | 'accessible_seating'
+  | 'platform_swing' | 'accessible_play_table' | 'large_print_panel' | 'accessible_seating'
   // toddler zone
   | 'mini_slide' | 'bee_spring_rider' | 'crawling_tunnel' | 'soft_play_modules' | 'sand_play_table' | 'toddler_book_nook'
   // interactive elements
-  | 'sound_effect_board' | 'solar_sensor_post' | 'musical_pipes' | 'sand_drawing_board'
+  | 'sound_effect_board' | 'musical_pipes'
   // expanded amenities
-  | 'charging_station' | 'u_rack_bike_parking' | 'modern_park_light' | 'bike_repair_station'
+  | 'u_rack_bike_parking' | 'modern_park_light' | 'bike_repair_station'
   // tech play
   | 'smart_gate' | 'digital_game_screen' | 'interactive_path' | 'ar_info_panel' | 'kinetic_power_station'
   // water features
-  | 'cascade_stream' | 'flower_sprinkler' | 'water_wheel' | 'market_stall' | 'pedal_pump' | 'sand_water_table'
+  | 'cascade_stream' | 'flower_sprinkler' | 'water_wheel' | 'market_stall' | 'pedal_pump'
   // imaginative stages
-  | 'amphitheater_stage' | 'lookout_tower' | 'castle_rampart' | 'submarine_play'
-  // eco garden
-  | 'compost_bin' | 'insect_hotel' | 'greenhouse_dome' | 'eco_signage'
+  | 'amphitheater_stage' | 'lookout_tower'
   // sports zone
   | 'multisport_court' | 'soccer_pitch' | 'calisthenics_frame'
   // learning elements
   | 'alphabet_panel' | 'number_wall' | 'compass_floor_design' | 'musical_notes_panel'
   // maintenance & safety
-  | 'hand_sanitizer' | 'recycling_bin' | 'surveillance_camera' | 'first_aid_station'
+  | 'surveillance_camera'
   // functional zones
-  | 'parent_seating' | 'dog_park_zone' | 'shade_structure';
+  | 'dog_park_zone' | 'shade_structure';
 
 /** A single dot-marker on a photo (normalised 0..1 within the photo). */
 export interface PhotoMarker {

@@ -45,7 +45,6 @@ const CATEGORY_EMOJI: Record<EquipmentCategoryId, string> = {
   tech_play: '📱',
   water_features: '💧',
   imaginative_stages: '🎭',
-  eco_garden: '🌱',
   sports_zone: '⚽',
   learning_elements: '🔤',
   maintenance_safety: '🛡️',

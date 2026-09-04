@@ -57,7 +57,6 @@ export const translations = {
   'equipment.cat.tech_play': { en: 'Tech play', pt: 'Brincadeira tecnológica' },
   'equipment.cat.water_features': { en: 'Water features', pt: 'Elementos de água' },
   'equipment.cat.imaginative_stages': { en: 'Imaginative stages', pt: 'Palcos imaginativos' },
-  'equipment.cat.eco_garden': { en: 'Eco garden', pt: 'Jardim ecológico' },
   'equipment.cat.sports_zone': { en: 'Sports zone', pt: 'Zona desportiva' },
   'equipment.cat.learning_elements': { en: 'Learning elements', pt: 'Elementos de aprendizagem' },
   'equipment.cat.maintenance_safety': { en: 'Maintenance & safety', pt: 'Manutenção e segurança' },

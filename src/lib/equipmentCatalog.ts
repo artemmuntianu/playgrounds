@@ -30,8 +30,7 @@ export const EQUIPMENT_CATEGORIES: EquipmentCategoryId[] = [
   'exploration', 'fitness', 'creativity', 'amenities',
   'sensory_play', 'adventure_course', 'nature_play', 'gathering_hub',
   'inclusive_play', 'toddler_zone', 'interactive_elements', 'expanded_amenities',
-  'tech_play', 'water_features', 'imaginative_stages', 'eco_garden',
-  'sports_zone', 'learning_elements', 'maintenance_safety', 'functional_zones',
+  'tech_play', 'water_features', 'imaginative_stages', 'sports_zone', 'learning_elements', 'maintenance_safety', 'functional_zones',
 ];
 
 /** Localized category names (matches i18n `equipment.cat.*` keys). */
@@ -55,7 +54,6 @@ const CATEGORY_LABELS: Record<EquipmentCategoryId, LocalizedText> = {
   tech_play: { en: 'Tech play', pt: 'Brincadeira tecnolÃ³gica' },
   water_features: { en: 'Water features', pt: 'Elementos de Ã¡gua' },
   imaginative_stages: { en: 'Imaginative stages', pt: 'Palcos imaginativos' },
-  eco_garden: { en: 'Eco garden', pt: 'Jardim ecolÃ³gico' },
   sports_zone: { en: 'Sports zone', pt: 'Zona desportiva' },
   learning_elements: { en: 'Learning elements', pt: 'Elementos de aprendizagem' },
   maintenance_safety: { en: 'Maintenance & safety', pt: 'ManutenÃ§Ã£o e seguranÃ§a' },
@@ -83,7 +81,6 @@ const CATEGORY_COLORS: Record<EquipmentCategoryId, string> = {
   tech_play: '#7c3aed',
   water_features: '#0284c7',
   imaginative_stages: '#a855f7',
-  eco_garden: '#16a34a',
   sports_zone: '#db2777',
   learning_elements: '#eab308',
   maintenance_safety: '#475569',
@@ -153,12 +150,9 @@ export const EQUIPMENT_CATALOG: EquipmentCatalogEntry[] = [
   { type: 'birdhouse_feeder', category: 'nature_play', label: { en: 'Birdhouse / feeder station', pt: 'Casa de pÃ¡ssaros' }, defaultAgeGroup: 'all' },
   // gathering hub
   { type: 'picnic_table_canopy', category: 'gathering_hub', label: { en: 'Picnic table with canopy', pt: 'Mesa de piquenique com toldo' }, defaultAgeGroup: 'all' },
-  { type: 'round_tree_bench', category: 'gathering_hub', label: { en: 'Round tree bench', pt: 'Banco redondo de Ã¡rvore' }, defaultAgeGroup: 'all' },
   { type: 'table_game_station', category: 'gathering_hub', label: { en: 'Table game station', pt: 'EstaÃ§Ã£o de jogos de mesa' }, defaultAgeGroup: 'schoolchildren' },
-  { type: 'community_toy_box', category: 'gathering_hub', label: { en: 'Community toy box', pt: 'Caixa de brinquedos' }, defaultAgeGroup: 'toddlers' },
   { type: 'pet_water_fountain', category: 'gathering_hub', label: { en: 'Pet water fountain', pt: 'Fonte para animais' }, defaultAgeGroup: 'all' },
   // inclusive play
-  { type: 'wheelchair_swing', category: 'inclusive_play', label: { en: 'Wheelchair ramp platform swing', pt: 'BaloiÃ§o com rampa acessÃ­vel' }, defaultAgeGroup: 'preschool' },
   { type: 'platform_swing', category: 'inclusive_play', label: { en: 'Platform swing', pt: 'BaloiÃ§o de plataforma' }, defaultAgeGroup: 'preschool' },
   { type: 'accessible_play_table', category: 'inclusive_play', label: { en: 'Accessible play table', pt: 'Mesa de jogo acessÃ­vel' }, defaultAgeGroup: 'preschool' },
   { type: 'large_print_panel', category: 'inclusive_play', label: { en: 'Large print panel', pt: 'Painel de letras grandes' }, defaultAgeGroup: 'preschool' },
@@ -172,11 +166,8 @@ export const EQUIPMENT_CATALOG: EquipmentCatalogEntry[] = [
   { type: 'toddler_book_nook', category: 'toddler_zone', label: { en: 'Toddler book nook', pt: 'Cantinho de leitura' }, defaultAgeGroup: 'toddlers' },
   // interactive elements
   { type: 'sound_effect_board', category: 'interactive_elements', label: { en: 'Sound effect board', pt: 'Painel de efeitos sonoros' }, defaultAgeGroup: 'preschool' },
-  { type: 'solar_sensor_post', category: 'interactive_elements', label: { en: 'Solar sensor post', pt: 'Poste com sensor solar' }, defaultAgeGroup: 'schoolchildren' },
   { type: 'musical_pipes', category: 'interactive_elements', label: { en: 'Musical pipes', pt: 'Tubos musicais' }, defaultAgeGroup: 'preschool' },
-  { type: 'sand_drawing_board', category: 'interactive_elements', label: { en: 'Sand drawing board', pt: 'Quadro de desenho em areia' }, defaultAgeGroup: 'preschool' },
   // expanded amenities
-  { type: 'charging_station', category: 'expanded_amenities', label: { en: 'Charging station', pt: 'EstaÃ§Ã£o de carregamento' }, defaultAgeGroup: 'all' },
   { type: 'u_rack_bike_parking', category: 'expanded_amenities', label: { en: 'U-rack bike parking', pt: 'Parque de bicicletas em U' }, defaultAgeGroup: 'all' },
   { type: 'modern_park_light', category: 'expanded_amenities', label: { en: 'Modern park light', pt: 'IluminaÃ§Ã£o moderna' }, defaultAgeGroup: 'all' },
   { type: 'bike_repair_station', category: 'expanded_amenities', label: { en: 'Bike repair station', pt: 'EstaÃ§Ã£o de reparaÃ§Ã£o de bicicletas' }, defaultAgeGroup: 'all' },
@@ -193,17 +184,9 @@ export const EQUIPMENT_CATALOG: EquipmentCatalogEntry[] = [
   { type: 'water_wheel', category: 'water_features', label: { en: 'Water wheel', pt: 'Roda de Ã¡gua' }, defaultAgeGroup: 'preschool' },
   { type: 'market_stall', category: 'water_features', label: { en: 'Market stall', pt: 'Banca de mercado' }, defaultAgeGroup: 'all' },
   { type: 'pedal_pump', category: 'water_features', label: { en: 'Pedal pump', pt: 'Bomba de pedal' }, defaultAgeGroup: 'schoolchildren' },
-  { type: 'sand_water_table', category: 'water_features', label: { en: 'Sand & water table', pt: 'Mesa de areia e Ã¡gua' }, defaultAgeGroup: 'toddlers' },
   // imaginative stages
   { type: 'amphitheater_stage', category: 'imaginative_stages', label: { en: 'Amphitheater stage', pt: 'Palco anfiteatro' }, defaultAgeGroup: 'schoolchildren' },
   { type: 'lookout_tower', category: 'imaginative_stages', label: { en: 'Lookout tower', pt: 'Torre de vigia' }, defaultAgeGroup: 'schoolchildren' },
-  { type: 'castle_rampart', category: 'imaginative_stages', label: { en: 'Castle rampart', pt: 'Muralha de castelo' }, defaultAgeGroup: 'preschool' },
-  { type: 'submarine_play', category: 'imaginative_stages', label: { en: 'Submarine play structure', pt: 'Estrutura de submarino' }, defaultAgeGroup: 'preschool' },
-  // eco garden
-  { type: 'compost_bin', category: 'eco_garden', label: { en: 'Compost bin', pt: 'Compostor' }, defaultAgeGroup: 'all' },
-  { type: 'insect_hotel', category: 'eco_garden', label: { en: 'Insect hotel', pt: 'Hotel de insetos' }, defaultAgeGroup: 'preschool' },
-  { type: 'greenhouse_dome', category: 'eco_garden', label: { en: 'Greenhouse dome', pt: 'Estufa abobadada' }, defaultAgeGroup: 'preschool' },
-  { type: 'eco_signage', category: 'eco_garden', label: { en: 'Eco signage', pt: 'SinalizaÃ§Ã£o ecolÃ³gica' }, defaultAgeGroup: 'all' },
   // sports zone
   { type: 'multisport_court', category: 'sports_zone', label: { en: 'Multisport court', pt: 'Campo multiusos' }, defaultAgeGroup: 'schoolchildren' },
   { type: 'soccer_pitch', category: 'sports_zone', label: { en: 'Soccer pitch', pt: 'Campo de futebol' }, defaultAgeGroup: 'schoolchildren' },
@@ -214,12 +197,8 @@ export const EQUIPMENT_CATALOG: EquipmentCatalogEntry[] = [
   { type: 'compass_floor_design', category: 'learning_elements', label: { en: 'Compass floor design', pt: 'Bússola no chão' }, defaultAgeGroup: 'schoolchildren' },
   { type: 'musical_notes_panel', category: 'learning_elements', label: { en: 'Musical notes panel', pt: 'Painel de notas musicais' }, defaultAgeGroup: 'preschool' },
   // maintenance & safety
-  { type: 'hand_sanitizer', category: 'maintenance_safety', label: { en: 'Hand sanitizer station', pt: 'EstaÃ§Ã£o de desinfetante' }, defaultAgeGroup: 'all' },
-  { type: 'recycling_bin', category: 'maintenance_safety', label: { en: 'Recycling bin', pt: 'Contentor de reciclagem' }, defaultAgeGroup: 'all' },
   { type: 'surveillance_camera', category: 'maintenance_safety', label: { en: 'Surveillance camera', pt: 'CÃ¢mara de vigilÃ¢ncia' }, defaultAgeGroup: 'all' },
-  { type: 'first_aid_station', category: 'maintenance_safety', label: { en: 'First aid station', pt: 'EstaÃ§Ã£o de primeiros socorros' }, defaultAgeGroup: 'all' },
   // functional zones
-  { type: 'parent_seating', category: 'functional_zones', label: { en: 'Parent seating', pt: 'Ãrea de estar para pais' }, defaultAgeGroup: 'all' },
   { type: 'dog_park_zone', category: 'functional_zones', label: { en: 'Dog park zone', pt: 'Zona de cÃ£es' }, defaultAgeGroup: 'all' },
   { type: 'shade_structure', category: 'functional_zones', label: { en: 'Shade structure', pt: 'Estrutura de sombra' }, defaultAgeGroup: 'all' },
 ];
