@@ -1,8 +1,10 @@
 # Migration Plan — PlayGround Portal → Vercel (Hobby / free) + Vercel Blob + GitHub
 
-> Status: **IN PROGRESS**. This is the canonical, step-by-step plan for moving this Astro SSR app
-> from a local Node server to Vercel's serverless platform, with image binaries served natively
-> from **Vercel Blob** and the code hosted in a new **private GitHub repo** `Playgrounds`.
+> Status: **Code migration COMPLETE & pushed** to `artemmuntianu/playgrounds` (branch `main`).
+> Remaining = manual deployment from the Vercel dashboard (Phase 8 / owner steps) + env vars + image upload.
+>
+> Note: the git-linked path (`create_git_project`) requires a **Vercel ⇄ GitHub Login Connection**,
+> which wasn't present, so deployment is done manually from the dashboard (import the repo).
 
 ## Why this is needed
 
