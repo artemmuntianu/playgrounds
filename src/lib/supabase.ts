@@ -58,17 +58,6 @@ export function getSupabaseConfig(): { url: string; anonKey: string; serviceKey?
   return { url, anonKey, serviceKey };
 }
 
-/**
- * Whether the app should use the Supabase backend. This is a server-centric app where
- * all writes go through API routes, so we require the service-role key (real server
- * credentials) to enable the DB backend. A publishable/anon key alone cannot reliably
- * write through PostgREST (RLS/policies), so we keep the file-system fallback until the
- * full server setup (service key + applied schema) is present.
- */
-export function isSupabaseConfigured(): boolean {
-  return Boolean(readEnv('SUPABASE_URL') && readEnv('SUPABASE_SECRET_KEY'));
-}
-
 /** Server-side client (API routes / islands). Uses service role for writes (bypasses RLS). */
 export function createServerClient(): SupabaseClient {
   const { url, serviceKey, anonKey } = getSupabaseConfig();
@@ -76,8 +65,3 @@ export function createServerClient(): SupabaseClient {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-/** Public read-only client (anon key + RLS). */
-export function createPublicClient(): SupabaseClient {
-  const { url, anonKey } = getSupabaseConfig();
-  return createClient(url, anonKey, { auth: { persistSession: false } });
-}

@@ -1,3 +1,9 @@
+> **Scope**: this `AGENTS.md` documents ONLY the shadow/rendering engine in `src/lib`.
+> For the rest of `lib` (weather, segmentation, solar, i18n, supabase, referenceData, equipment,
+> api) and for the project-wide architecture, invariants and dead code, read
+> `CONSTITUTION.md` (project root) and the other per-layer `AGENTS.md` files.
+
+
 # Shadow rendering logic (2.5D shadow simulation)
 
 This directory contains the **math and rendering engine** that simulates

@@ -1,6 +1,13 @@
 # Frontend Agent Rules (DeepSeek V4 Optimization)
 
+- **Always respond in English**, regardless of the language used in the input (the operator may
+  write in Russian; outputs are always in English).
 - DO NOT rewrite an entire component file to change styling. Use surgical string replacements or lines patches.
 - Prioritize Tailwind CSS utility classes over creating arbitrary custom inline styles unless specifically requested.
 - Do not spend tokens generating heavy mock data fixtures unless the component lacks typescript definitions.
 - Keep components modular. If a component exceeds 250 lines during an adjustment, proactively suggest breaking it down into sub-components.
+
+# Shell (Windows PowerShell 5.1) — read `AGENTS.md` for full details
+- Chaining two commands with `&` or `&&` is a parse error here. **Only `;`** is valid as a separator.
+- Use `cmd /c "pgm > file.txt 2>&1"` for npm/build/tsc, then read `file.txt`. A wrapper `exit code 1`
+  is NOT a failure — verify the log/artifact.

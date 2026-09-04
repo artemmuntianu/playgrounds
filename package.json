@@ -7,14 +7,12 @@
     "build": "astro build",
     "preview": "astro preview",
     "start": "node dist/server/entry.mjs",
-    "typecheck": "tsc --noEmit",
-    "migrate:supabase": "node scripts/migrate-to-supabase.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.4",
     "@astrojs/react": "^6.0.4",
     "@astrojs/tailwind": "^6.0.2",
-    "@google/generative-ai": "^0.21.0",
     "@supabase/supabase-js": "^2.46.2",
     "astro": "^7.2.9",
     "react": "^18.3.1",
@@ -25,8 +23,6 @@
     "@types/node": "^26.4.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
-    "@types/three": "^0.185.1",
-    "three": "^0.185.1",
     "typescript": "^5.7.3"
   }
 }

@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       depthFile.type
     );
 
-    // Update photo in playground.json
+    // Update photo metadata in the database.
     const updatedPhotos = playground.photos.map((p) =>
       p.id === photoId ? { ...p, depth_map_filename: savedDepthFilename } : p
     );
