@@ -91,6 +91,8 @@ export const EQUIPMENT_CATALOG: EquipmentCatalogEntry[] = [
   // ride & balance
   { type: 'swings_single', category: 'ride_balance', label: { en: 'Swing (single)', pt: 'BaloiÃ§o (individual)' }, defaultAgeGroup: 'toddlers' },
   { type: 'swing_nest', category: 'ride_balance', label: { en: 'Swing (nest)', pt: 'BaloiÃ§o (ninho)' }, defaultAgeGroup: 'preschool' },
+  { type: 'swings_double', category: 'ride_balance', label: { en: 'Swing (double)', pt: 'Baloiço (duplo)' }, defaultAgeGroup: 'schoolchildren' },
+  { type: 'swings_triple', category: 'ride_balance', label: { en: 'Swing (triple)', pt: 'Baloiço (triplo)' }, defaultAgeGroup: 'schoolchildren' },
   { type: 'seesaw', category: 'ride_balance', label: { en: 'Seesaw', pt: 'BalanÃ§a' }, defaultAgeGroup: 'toddlers' },
   { type: 'carousel', category: 'ride_balance', label: { en: 'Carousel', pt: 'Carrossel' }, defaultAgeGroup: 'preschool' },
   { type: 'slide', category: 'ride_balance', label: { en: 'Slide', pt: 'Escorregador' }, defaultAgeGroup: 'preschool' },

@@ -30,7 +30,7 @@ export type EquipmentCategoryId =
 /** Concrete element types an operator can place on a playground. */
 export type EquipmentTypeId =
   // ride & balance
-  | 'swings_single' | 'swing_nest' | 'seesaw' | 'carousel' | 'slide'
+  | 'swings_single' | 'swings_double' | 'swings_triple' | 'swing_nest' | 'seesaw' | 'carousel' | 'slide'
   // sport & game complexes
   | 'ladder' | 'wall_bars' | 'monkey_bars' | 'rope_net' | 'pull_up_bar' | 'climbing_wall'
   // development
