@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { AgeGroup, Playground } from '../../types/playground';
-import { AGE_GROUPS, AGE_GROUP_LABELS } from '../../lib/equipmentCatalog';
+import { useReferenceData, getAgeGroups, getAgeGroupLabel } from '../../lib/equipment';
 
 interface PlaygroundFormProps {
   initialData?: Partial<Playground>;
@@ -45,6 +45,9 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
 
   const [error, setError] = useState<string | null>(null);
 
+  // Reference vocabulary (age groups) — from the DB.
+  const { ready: refReady } = useReferenceData();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nameEn.trim()) {
@@ -71,6 +74,14 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
       setError(err.message || 'Failed to save playground');
     }
   };
+
+  if (!refReady) {
+    return (
+      <div className="p-16 text-center text-slate-400 text-sm font-medium bg-white rounded-2xl border border-slate-200">
+        Loading catalogue...
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 text-sm">
@@ -254,9 +265,9 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
               onChange={(e) => setAgeGroupId(e.target.value as AgeGroup)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs"
             >
-              {AGE_GROUPS.map((id) => (
+              {getAgeGroups().map((id) => (
                 <option key={id} value={id}>
-                  {AGE_GROUP_LABELS[id].en} / {AGE_GROUP_LABELS[id].pt}
+                  {getAgeGroupLabel(id).en} / {getAgeGroupLabel(id).pt}
                 </option>
               ))}
             </select>

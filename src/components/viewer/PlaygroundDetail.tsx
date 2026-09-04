@@ -4,7 +4,13 @@ import type { SceneAnnotation } from '../../types/shadow';
 import { fetchPlayground, fetchScene } from '../../lib/api';
 import { ViewerShadowCanvas, type EquipmentMarkerDisplay } from './ViewerShadowCanvas';
 import { t, formatDayLabel, type Locale } from '../../lib/i18n';
-import { AGE_GROUP_LABELS, getCategory, getEquipmentLabel, getEquipmentIcon } from '../../lib/equipmentCatalog';
+import {
+  useReferenceData,
+  getAgeGroupLabel,
+  getCategory,
+  getEquipmentLabel,
+  getEquipmentIcon,
+} from '../../lib/equipment';
 import { getSolarPosition } from '../../lib/solar';
 import {
   useWeather,
@@ -56,6 +62,9 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
 
   // Substitute the live data with a demo snapshot when demo mode is on (rain 11:00-12:00).
   const weather = weatherMode === 'demo' ? buildDemoWeather(timeMinutes) : liveWeather;
+
+  // Reference vocabulary (age groups + equipment catalog) — from the DB.
+  const { ready: refReady } = useReferenceData();
 
   useEffect(() => {
     const stored = localStorage.getItem('pmp_lang') as Locale | null;
@@ -154,6 +163,15 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
     );
   }
 
+  if (!refReady) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <span className="text-xs font-semibold">{t('detail.loading', lang)}</span>
+      </div>
+    );
+  }
+
   const buildDate = (mins: number): Date => {
     const d = new Date();
     d.setDate(d.getDate() + dayOffset);
@@ -176,7 +194,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
   const tempText = weather
     ? deriveTempLabel(weather)[lang]
     : playground.attributes.surface_temperature[lang] || playground.attributes.surface_temperature.en;
-  const ageText = AGE_GROUP_LABELS[playground.attributes.target_age_group.id][lang];
+  const ageText = getAgeGroupLabel(playground.attributes.target_age_group.id)[lang];
 
   // Equipment markers for the active photo (one per equipment marker matching this photo).
   const activeMarkers: EquipmentMarkerDisplay[] = activePhoto

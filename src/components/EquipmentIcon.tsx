@@ -1,6 +1,6 @@
 import React from 'react';
 import type { EquipmentTypeId } from '../types/playground';
-import { getEquipmentIcon } from '../lib/equipmentCatalog';
+import { getEquipmentIcon } from '../lib/equipment';
 
 interface EquipmentIconProps {
   type: EquipmentTypeId;

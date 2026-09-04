@@ -6,14 +6,15 @@ import type {
   PlaygroundEquipmentItem,
 } from '../../types/playground';
 import {
-  AGE_GROUPS,
-  AGE_GROUP_LABELS,
-  EQUIPMENT_CATALOG,
-  EQUIPMENT_CATEGORIES,
+  useReferenceData,
+  getAgeGroups,
+  getAgeGroupLabel,
+  getEquipmentCatalog,
+  getEquipmentCategories,
   getCategory,
   getCategoryLabel,
   getEquipmentLabel,
-} from '../../lib/equipmentCatalog';
+} from '../../lib/equipment';
 import { EquipmentIcon } from '../EquipmentIcon';
 import { updateEquipmentApi } from '../../lib/api';
 
@@ -65,6 +66,9 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
   const [saved, setSaved] = useState(false);
   const [search, setSearch] = useState('');
 
+  // Reference vocabulary (catalogue) — from the DB.
+  const { ready: refReady } = useReferenceData();
+
   const mutate = (updater: (prev: PlaygroundEquipmentItem[]) => PlaygroundEquipmentItem[]) => {
     setEquipment(updater);
     setDirty(true);
@@ -72,7 +76,7 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
   };
 
   const addItem = (type: EquipmentTypeId) => {
-    const defaultAge = EQUIPMENT_CATALOG.find((e) => e.type === type)?.defaultAgeGroup;
+    const defaultAge = getEquipmentCatalog().find((e) => e.type === type)?.defaultAgeGroup;
     mutate((prev) => [
       ...prev,
       { id: `${type}_${Date.now()}`, type, age_group: defaultAge ?? undefined, markers: [] },
@@ -104,6 +108,14 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
       setSaving(false);
     }
   };
+
+  if (!refReady) {
+    return (
+      <div className="p-12 text-center text-slate-400 text-sm font-medium bg-white rounded-2xl border border-slate-200">
+        Loading catalogue...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -145,70 +157,6 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
           {saved ? '✅ Elements saved' : '⚠️ Unsaved changes — click Save'}
         </div>
       )}
-
-      {/* Add from catalog, grouped by category */}
-      <div className="space-y-4">
-        <div>
-          <h4 className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2">
-            Add elements
-          </h4>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search elements by name…"
-            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
-          />
-        </div>
-
-        {EQUIPMENT_CATEGORIES.map((cat) => {
-          const matches = EQUIPMENT_CATALOG.filter((e) => {
-            if (e.category !== cat) return false;
-            if (!search.trim()) return true;
-            const q = search.trim().toLowerCase();
-            return (
-              e.label.en.toLowerCase().includes(q) ||
-              e.label.pt.toLowerCase().includes(q)
-            );
-          });
-          if (matches.length === 0) return null;
-          return (
-            <div key={cat} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-              <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <span>{CATEGORY_EMOJI[cat]}</span> {getCategoryLabel(cat).en}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {matches.map((entry) => (
-                  <button
-                    key={entry.type}
-                    type="button"
-                    onClick={() => addItem(entry.type)}
-                    title={`Add ${entry.label.en} — hover to see full size`}
-                    className="group flex items-center gap-2.5 px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700 transition"
-                  >
-                    <span className="relative shrink-0 inline-flex items-center justify-center w-[50px] h-[50px]">
-                      <EquipmentIcon type={entry.type} size={LIST_ICON_SIZE} />
-                      <span className="pointer-events-none absolute top-full left-1/2 z-30 hidden group-hover:flex mt-2 -translate-x-1/2 p-2 bg-white border border-slate-300 rounded-xl shadow-xl">
-                        <EquipmentIcon type={entry.type} size={FULL_ICON_SIZE} />
-                      </span>
-                    </span>
-                    <span className="truncate">+ {entry.label.en}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-
-        {search.trim() && EQUIPMENT_CATALOG.filter((e) => {
-          const q = search.trim().toLowerCase();
-          return e.label.en.toLowerCase().includes(q) || e.label.pt.toLowerCase().includes(q);
-        }).length === 0 && (
-          <p className="text-xs text-slate-400 italic">
-            No elements match “{search.trim()}”.
-          </p>
-        )}
-      </div>
 
       {/* Existing equipment list */}
       {equipment.length > 0 && (
@@ -265,8 +213,8 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
                     className="px-2 py-1 text-xs border border-slate-300 rounded-lg bg-white min-w-[140px]"
                   >
                     <option value="">No age group</option>
-                    {AGE_GROUPS.map((g) => (
-                      <option key={g} value={g}>{AGE_GROUP_LABELS[g].en}</option>
+                    {getAgeGroups().map((g) => (
+                      <option key={g} value={g}>{getAgeGroupLabel(g).en}</option>
                     ))}
                   </select>
 
@@ -290,9 +238,73 @@ export const EquipmentEditor: React.FC<EquipmentEditorProps> = ({
 
       {equipment.length === 0 && (
         <p className="text-xs text-slate-400 italic">
-          No elements added yet — use the buttons above to add playground equipment.
+          No elements added yet — use the buttons below to add playground equipment.
         </p>
       )}
+
+      {/* Add from catalog, grouped by category */}
+      <div className="space-y-4">
+        <div>
+          <h4 className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2">
+            Add elements
+          </h4>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search elements by name…"
+            className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+          />
+        </div>
+
+        {getEquipmentCategories().map((cat) => {
+          const matches = getEquipmentCatalog().filter((e) => {
+            if (e.category !== cat) return false;
+            if (!search.trim()) return true;
+            const q = search.trim().toLowerCase();
+            return (
+              e.label.en.toLowerCase().includes(q) ||
+              e.label.pt.toLowerCase().includes(q)
+            );
+          });
+          if (matches.length === 0) return null;
+          return (
+            <div key={cat} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="text-xs font-extrabold text-slate-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <span>{CATEGORY_EMOJI[cat]}</span> {getCategoryLabel(cat).en}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {matches.map((entry) => (
+                  <button
+                    key={entry.type}
+                    type="button"
+                    onClick={() => addItem(entry.type)}
+                    title={`Add ${entry.label.en} — hover to see full size`}
+                    className="group flex items-center gap-2.5 px-3 py-2 text-xs font-semibold bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700 transition"
+                  >
+                    <span className="relative shrink-0 inline-flex items-center justify-center w-[50px] h-[50px]">
+                      <EquipmentIcon type={entry.type} size={LIST_ICON_SIZE} />
+                      <span className="pointer-events-none absolute top-full left-1/2 z-30 hidden group-hover:flex mt-2 -translate-x-1/2 p-2 bg-white border border-slate-300 rounded-xl shadow-xl">
+                        <EquipmentIcon type={entry.type} size={FULL_ICON_SIZE} />
+                      </span>
+                    </span>
+                    <span className="truncate">+ {entry.label.en}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {search.trim() && getEquipmentCatalog().filter((e) => {
+          const q = search.trim().toLowerCase();
+          return e.label.en.toLowerCase().includes(q) || e.label.pt.toLowerCase().includes(q);
+        }).length === 0 && (
+          <p className="text-xs text-slate-400 italic">
+            No elements match “{search.trim()}”.
+          </p>
+        )}
+      </div>
     </div>
   );
 };

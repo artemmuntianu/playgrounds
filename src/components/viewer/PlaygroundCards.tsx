@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import type { AgeGroup, EquipmentCategoryId, PlaygroundSummary } from '../../types/playground';
 import { fetchPlaygrounds } from '../../lib/api';
 import { t, type Locale } from '../../lib/i18n';
-import { AGE_GROUPS, AGE_GROUP_LABELS, EQUIPMENT_CATEGORIES, getCategory, getCategoryLabel } from '../../lib/equipmentCatalog';
+import {
+  useReferenceData,
+  getAgeGroups,
+  getAgeGroupLabel,
+  getEquipmentCategories,
+  getCategory,
+  getCategoryLabel,
+} from '../../lib/equipment';
 
 export const PlaygroundCards: React.FC = () => {
   const [playgrounds, setPlaygrounds] = useState<PlaygroundSummary[]>([]);
@@ -16,6 +23,9 @@ export const PlaygroundCards: React.FC = () => {
   const [ageFilter, setAgeFilter] = useState<AgeGroup | 'all'>('all');
   const [equipFilter, setEquipFilter] = useState<EquipmentCategoryId | 'all'>('all');
   const [sortBy, setSortBy] = useState<string>('name_asc');
+
+  // Reference vocabulary (age groups + equipment catalog) — single source of truth from the DB.
+  const { ready: refReady } = useReferenceData();
 
   useEffect(() => {
     // Read stored language or default to en
@@ -71,6 +81,14 @@ export const PlaygroundCards: React.FC = () => {
     return 0;
   });
 
+  if (!refReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400 text-sm font-semibold">
+        Loading catalogue...
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen pb-12 bg-slate-50">
       {/* Sticky Mobile Header */}
@@ -112,11 +130,13 @@ export const PlaygroundCards: React.FC = () => {
               className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
             >
               <option value="all">👶 {t('master.filter.all', lang)}</option>
-              {AGE_GROUPS.filter((g) => g !== 'all').map((g) => (
-                <option key={g} value={g}>
-                  👶 {AGE_GROUP_LABELS[g][lang]}
-                </option>
-              ))}
+              {getAgeGroups()
+                .filter((g) => g !== 'all')
+                .map((g) => (
+                  <option key={g} value={g}>
+                    👶 {getAgeGroupLabel(g)[lang]}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -129,7 +149,7 @@ export const PlaygroundCards: React.FC = () => {
               className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
             >
               <option value="all">🧩 {t('master.filter_any', lang)}</option>
-              {EQUIPMENT_CATEGORIES.map((c) => (
+              {getEquipmentCategories().map((c) => (
                 <option key={c} value={c}>
                   🧩 {getCategoryLabel(c)[lang]}
                 </option>
@@ -192,7 +212,7 @@ export const PlaygroundCards: React.FC = () => {
             const shortDesc = pg.short_description[lang] || pg.short_description.en;
             const shadowText = pg.attributes.shadow_coverage[lang] || pg.attributes.shadow_coverage.en;
             const tempText = pg.attributes.surface_temperature[lang] || pg.attributes.surface_temperature.en;
-            const ageText = AGE_GROUP_LABELS[pg.attributes.target_age_group.id][lang];
+            const ageText = getAgeGroupLabel(pg.attributes.target_age_group.id)[lang];
 
             return (
               <a

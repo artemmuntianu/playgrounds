@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PlaygroundSummary } from '../../types/playground';
 import { fetchPlaygrounds, deletePlaygroundApi, createPlayground } from '../../lib/api';
-import { AGE_GROUP_LABELS } from '../../lib/equipmentCatalog';
+import { useReferenceData, getAgeGroupLabel } from '../../lib/equipment';
 import { PlaygroundForm } from './PlaygroundForm';
 
 export const PlaygroundList: React.FC = () => {
@@ -10,6 +10,9 @@ export const PlaygroundList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Reference vocabulary (age groups) — from the DB.
+  const { ready: refReady } = useReferenceData();
 
   const loadPlaygrounds = async () => {
     try {
@@ -53,6 +56,14 @@ export const PlaygroundList: React.FC = () => {
       alert(`Failed to delete: ${err.message}`);
     }
   };
+
+  if (!refReady) {
+    return (
+      <div className="p-16 text-center text-slate-400 text-sm font-medium bg-white rounded-2xl border border-slate-200">
+        Loading catalogue...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -162,7 +173,7 @@ export const PlaygroundList: React.FC = () => {
                         🌡️ {pg.attributes.surface_temperature.en}
                       </span>
                       <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-[10px]">
-                        👶 {AGE_GROUP_LABELS[pg.attributes.target_age_group.id].en}
+                        👶 {getAgeGroupLabel(pg.attributes.target_age_group.id).en}
                       </span>
                       {pg.equipment_types.length > 0 && (
                         <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-800 border border-violet-200 font-semibold text-[10px]">

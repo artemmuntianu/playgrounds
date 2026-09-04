@@ -8,7 +8,7 @@ import { loadSegmentationMask } from '../../lib/segmentation';
 import { renderSegmentedScene } from '../../lib/segRenderer';
 import type { ShadowCameraParams } from '../../lib/shadowProjection';
 import type { SegmentationData } from '../../types/segmentation';
-import { getCategoryColor } from '../../lib/equipmentCatalog';
+import { getCategoryColor } from '../../lib/equipment';
 
 /** A dot-marker to overlay onto the photo (normalised 0..1 coordinates). */
 export interface EquipmentMarkerDisplay {

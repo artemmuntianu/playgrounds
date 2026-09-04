@@ -1,6 +1,7 @@
 // Playground persistence module.
-// Data CRUD + scenes now route through `repo` (Supabase when configured, else file system).
-// Image binaries (photos/depth/seg) stay on the file system via `photos` + `paths`.
+// All data (playground metadata, photos metadata, equipment, scenes, reference catalog)
+// routes through `repo` (the Supabase database). Only image binaries (photos/depth/seg)
+// stay on the file system via `photos` + `paths`.
 export { BASE_DIR, ensureBaseDir, playgroundDir } from './paths';
 export { slugify } from './slugify';
 export {

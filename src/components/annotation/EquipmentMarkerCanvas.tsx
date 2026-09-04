@@ -4,7 +4,7 @@ import {
   normToCanvasPx,
 } from '../../lib/annotationCoords';
 import type { EquipmentMarkerDisplay } from '../viewer/ViewerShadowCanvas';
-import { getCategoryColor } from '../../lib/equipmentCatalog';
+import { getCategoryColor } from '../../lib/equipment';
 
 interface EquipmentMarkerCanvasProps {
   imageUrl: string;
