@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import type { Playground, PlaygroundPhoto } from '../../types/playground';
 import type { SceneAnnotation } from '../../types/shadow';
 import { fetchPlayground, fetchScene } from '../../lib/api';
-import { ViewerShadowCanvas } from './ViewerShadowCanvas';
+import { ViewerShadowCanvas, type EquipmentMarkerDisplay } from './ViewerShadowCanvas';
 import { t, formatDayLabel, type Locale } from '../../lib/i18n';
+import { AGE_GROUP_LABELS, getCategory, getEquipmentLabel } from '../../lib/equipmentCatalog';
 import { getSolarPosition } from '../../lib/solar';
 import {
   useWeather,
@@ -26,6 +27,9 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
 
   // i18n Language State
   const [lang, setLang] = useState<Locale>('en');
+
+  // Equipment markers visibility toggle
+  const [showEquipment, setShowEquipment] = useState(true);
 
   // Time Machine Slider: minutes from midnight (Default 09:45 -> 9*60 + 45 = 585)
   const [timeMinutes, setTimeMinutes] = useState<number>(585);
@@ -172,7 +176,25 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
   const tempText = weather
     ? deriveTempLabel(weather)[lang]
     : playground.attributes.surface_temperature[lang] || playground.attributes.surface_temperature.en;
-  const ageText = playground.attributes.target_age_group[lang] || playground.attributes.target_age_group.en;
+  const ageText = AGE_GROUP_LABELS[playground.attributes.target_age_group.id][lang];
+
+  // Equipment markers for the active photo (one per equipment marker matching this photo).
+  const activeMarkers: EquipmentMarkerDisplay[] = activePhoto
+    ? playground.equipment.flatMap((item) =>
+        item.markers
+          .filter((m) => m.photo_id === activePhoto.id)
+          .map((m) => {
+            const label = item.custom_name?.[lang] || getEquipmentLabel(item.type)[lang];
+            return {
+              x: m.x,
+              y: m.y,
+              label,
+              category: getCategory(item.type),
+            };
+          }),
+      )
+    : [];
+  const markerCount = activeMarkers.length;
 
   const currentPhotoUrl = activePhoto
     ? `/api/playgrounds/${playground.id}/photo/${activePhoto.filename}`
@@ -241,6 +263,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
               isAdditional={isCurrentPhotoAdditional}
               weather={weather}
               effects={effects}
+              equipmentMarkers={showEquipment ? activeMarkers : []}
             />
           ) : (
             <div className="w-full aspect-[4/3] flex flex-col items-center justify-center text-slate-400 bg-white">
@@ -257,11 +280,24 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
               <span className="flex items-center gap-1">
                 <span>🖼️</span> {t('detail.gallery', lang)} ({playground.photos.length})
               </span>
-              {isCurrentPhotoAdditional && (
-                <span className="text-[10px] text-indigo-600 font-semibold lowercase">
-                  (gallery photo selected)
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {isCurrentPhotoAdditional && (
+                  <span className="text-[10px] text-indigo-600 font-semibold lowercase">
+                    (gallery photo selected)
+                  </span>
+                )}
+                {markerCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEquipment((s) => !s)}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide transition bg-violet-100 text-violet-800 border border-violet-300 hover:bg-violet-200"
+                  >
+                    {showEquipment
+                      ? t('detail.markers.show', lang).replace('(N)', String(markerCount))
+                      : t('detail.markers.hide', lang)}
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2.5 overflow-x-auto pb-1 no-scrollbar">

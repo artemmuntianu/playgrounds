@@ -1,5 +1,6 @@
 // Playground persistence module.
-// Grouped by concern: paths/slugify helpers, playground CRUD, photo files, scenes.
+// Data CRUD + scenes now route through `repo` (Supabase when configured, else file system).
+// Image binaries (photos/depth/seg) stay on the file system via `photos` + `paths`.
 export { BASE_DIR, ensureBaseDir, playgroundDir } from './paths';
 export { slugify } from './slugify';
 export {
@@ -8,7 +9,9 @@ export {
   createPlayground,
   updatePlayground,
   deletePlayground,
-} from './playground';
+  getPlaygroundScene,
+  savePlaygroundScene,
+} from './repo';
 export {
   savePlaygroundPhoto,
   savePlaygroundDepthMap,
@@ -17,4 +20,3 @@ export {
   getPhotoUrl,
   getPhotoPath,
 } from './photos';
-export { savePlaygroundScene, getPlaygroundScene } from './scenes';

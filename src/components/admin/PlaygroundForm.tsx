@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import type { Playground } from '../../types/playground';
+import type { AgeGroup, Playground } from '../../types/playground';
+import { AGE_GROUPS, AGE_GROUP_LABELS } from '../../lib/equipmentCatalog';
 
 interface PlaygroundFormProps {
   initialData?: Partial<Playground>;
@@ -38,11 +39,8 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
   const [surfaceTempPt, setSurfaceTempPt] = useState(
     initialData?.attributes?.surface_temperature?.pt || 'Morno (~28°C)'
   );
-  const [ageGroupEn, setAgeGroupEn] = useState(
-    initialData?.attributes?.target_age_group?.en || '3-7 years'
-  );
-  const [ageGroupPt, setAgeGroupPt] = useState(
-    initialData?.attributes?.target_age_group?.pt || '3-7 anos'
+  const [ageGroupId, setAgeGroupId] = useState<AgeGroup>(
+    initialData?.attributes?.target_age_group?.id ?? 'preschool'
   );
 
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +64,7 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
         attributes: {
           shadow_coverage: { en: shadowCoverageEn, pt: shadowCoveragePt },
           surface_temperature: { en: surfaceTempEn, pt: surfaceTempPt },
-          target_age_group: { en: ageGroupEn, pt: ageGroupPt },
+          target_age_group: { id: ageGroupId },
         },
       });
     } catch (err: any) {
@@ -252,21 +250,15 @@ export const PlaygroundForm: React.FC<PlaygroundFormProps> = ({
               👶 Target Age Group
             </label>
             <select
-              value={ageGroupEn}
-              onChange={(e) => {
-                const val = e.target.value;
-                setAgeGroupEn(val);
-                if (val === '0-3 years') setAgeGroupPt('0-3 anos');
-                else if (val === '3-7 years') setAgeGroupPt('3-7 anos');
-                else if (val === '7+ years') setAgeGroupPt('7+ anos');
-                else if (val === 'All ages') setAgeGroupPt('Todas as idades');
-              }}
+              value={ageGroupId}
+              onChange={(e) => setAgeGroupId(e.target.value as AgeGroup)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs"
             >
-              <option value="0-3 years">0-3 years / 0-3 anos</option>
-              <option value="3-7 years">3-7 years / 3-7 anos</option>
-              <option value="7+ years">7+ years / 7+ anos</option>
-              <option value="All ages">All ages / Todas as idades</option>
+              {AGE_GROUPS.map((id) => (
+                <option key={id} value={id}>
+                  {AGE_GROUP_LABELS[id].en} / {AGE_GROUP_LABELS[id].pt}
+                </option>
+              ))}
             </select>
           </div>
         </div>

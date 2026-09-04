@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { Playground, PlaygroundSummary } from '../../types/playground';
+import type { AgeGroup, Playground, PlaygroundSummary } from '../../types/playground';
 import { BASE_DIR, ensureBaseDir, playgroundDir } from './paths';
 import { slugify } from './slugify';
+import { normalizePlayground } from './normalize';
 
 /**
  * List all playgrounds as summaries.
@@ -23,13 +24,22 @@ export async function listPlaygrounds(): Promise<PlaygroundSummary[]> {
     const jsonPath = path.join(BASE_DIR, entry, 'playground.json');
     try {
       const raw = await fs.readFile(jsonPath, 'utf-8');
-      const pg: Playground = JSON.parse(raw);
+      const pg: Playground = normalizePlayground(JSON.parse(raw));
 
       // Determine thumbnail URL
       const thumbPhoto = pg.photos.find((p) => p.id === pg.thumbnail_photo_id);
       const thumbnail_url = thumbPhoto
         ? `/api/playgrounds/${pg.id}/photo/${thumbPhoto.filename}`
         : '';
+
+      const equipmentTypes = [...new Set(pg.equipment.map((e) => e.type))];
+      const equipmentAgeGroups = [
+        ...new Set(
+          pg.equipment
+            .map((e) => e.age_group)
+            .filter((g): g is AgeGroup => Boolean(g)),
+        ),
+      ];
 
       summaries.push({
         id: pg.id,
@@ -40,6 +50,8 @@ export async function listPlaygrounds(): Promise<PlaygroundSummary[]> {
         attributes: pg.attributes,
         photo_count: pg.photos.length,
         created_at: pg.created_at,
+        equipment_types: equipmentTypes,
+        equipment_age_groups: equipmentAgeGroups,
       });
     } catch {
       // Skip directories that don't have a valid playground.json
@@ -60,7 +72,7 @@ export async function getPlayground(id: string): Promise<Playground | null> {
   const jsonPath = path.join(playgroundDir(id), 'playground.json');
   try {
     const raw = await fs.readFile(jsonPath, 'utf-8');
-    return JSON.parse(raw) as Playground;
+    return normalizePlayground(JSON.parse(raw));
   } catch {
     return null;
   }
@@ -98,6 +110,7 @@ export async function createPlayground(
   const playground: Playground = {
     ...data,
     id: finalId,
+    equipment: data.equipment ?? [],
     created_at: now,
     updated_at: now,
   };

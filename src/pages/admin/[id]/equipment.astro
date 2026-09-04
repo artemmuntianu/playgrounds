@@ -1,0 +1,12 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { EquipmentMarkerPage } from '../../../components/admin/EquipmentMarkerPage';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+---
+
+<AdminLayout title="Equipment Markers | Admin Portal">
+  <EquipmentMarkerPage playgroundId={id || ''} client:load />
+</AdminLayout>

@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import type { PlaygroundSummary } from '../../types/playground';
+import type { AgeGroup, EquipmentCategoryId, PlaygroundSummary } from '../../types/playground';
 import { fetchPlaygrounds } from '../../lib/api';
-import { t, type Locale } from '../../lib/i18n';
+import { t, type Locale, type TranslationKey } from '../../lib/i18n';
+import { AGE_GROUPS, AGE_GROUP_LABELS, getCategory } from '../../lib/equipmentCatalog';
+
+const EQUIP_CATEGORIES: EquipmentCategoryId[] = ['ride_balance', 'sport_complex', 'development', 'rest'];
+
+const EQUIP_CAT_KEY: Record<EquipmentCategoryId, TranslationKey> = {
+  ride_balance: 'equipment.cat.ride_balance',
+  sport_complex: 'equipment.cat.sport_complex',
+  development: 'equipment.cat.development',
+  rest: 'equipment.cat.rest',
+};
 
 export const PlaygroundCards: React.FC = () => {
   const [playgrounds, setPlaygrounds] = useState<PlaygroundSummary[]>([]);
@@ -12,7 +22,8 @@ export const PlaygroundCards: React.FC = () => {
   const [lang, setLang] = useState<Locale>('en');
 
   // Filter & Sort state
-  const [ageFilter, setAgeFilter] = useState<string>('all');
+  const [ageFilter, setAgeFilter] = useState<AgeGroup | 'all'>('all');
+  const [equipFilter, setEquipFilter] = useState<EquipmentCategoryId | 'all'>('all');
   const [sortBy, setSortBy] = useState<string>('name_asc');
 
   useEffect(() => {
@@ -45,13 +56,16 @@ export const PlaygroundCards: React.FC = () => {
     load();
   }, []);
 
-  // Filter logic
+  // Filter logic: age groups come from the playground's *equipment*; element groups too.
   const filteredPlaygrounds = playgrounds.filter((pg) => {
-    if (ageFilter === 'all') return true;
-    const pgAge = pg.attributes.target_age_group.en.toLowerCase();
-    if (ageFilter === '0_3') return pgAge.includes('0-3') || pgAge.includes('all');
-    if (ageFilter === '3_7') return pgAge.includes('3-7') || pgAge.includes('all');
-    if (ageFilter === '7_plus') return pgAge.includes('7+') || pgAge.includes('all');
+    if (ageFilter !== 'all') {
+      const hasAge = pg.equipment_age_groups.includes(ageFilter);
+      if (!hasAge) return false;
+    }
+    if (equipFilter !== 'all') {
+      const hasEquip = pg.equipment_types.some((type) => getCategory(type) === equipFilter);
+      if (!hasEquip) return false;
+    }
     return true;
   });
 
@@ -96,34 +110,72 @@ export const PlaygroundCards: React.FC = () => {
       </header>
 
       {/* Filter and Sort Toolbar */}
-      <div className="px-4 py-3 bg-white border-b border-slate-100 flex items-center gap-2">
-        {/* Age Group Filter */}
-        <div className="flex-1">
-          <select
-            value={ageFilter}
-            onChange={(e) => setAgeFilter(e.target.value)}
-            className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-          >
-            <option value="all">👶 {t('master.filter.all', lang)}</option>
-            <option value="0_3">👶 {t('master.filter.0_3', lang)}</option>
-            <option value="3_7">👶 {t('master.filter.3_7', lang)}</option>
-            <option value="7_plus">👶 {t('master.filter.7_plus', lang)}</option>
-          </select>
-        </div>
+      <div className="px-4 py-3 bg-white border-b border-slate-100 space-y-2">
+        <div className="flex items-center gap-2">
+          {/* Age Group Filter (from equipment) */}
+          <div className="flex-1">
+            <select
+              value={ageFilter}
+              onChange={(e) => setAgeFilter(e.target.value as AgeGroup | 'all')}
+              aria-label={t('master.filter_label', lang)}
+              className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            >
+              <option value="all">👶 {t('master.filter.all', lang)}</option>
+              {AGE_GROUPS.filter((g) => g !== 'all').map((g) => (
+                <option key={g} value={g}>
+                  👶 {AGE_GROUP_LABELS[g][lang]}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Sort Selector */}
-        <div className="flex-1">
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-          >
-            <option value="name_asc">🔤 {t('master.sort.name_asc', lang)}</option>
-            <option value="name_desc">🔤 {t('master.sort.name_desc', lang)}</option>
-            <option value="newest">⏱️ {t('master.sort.newest', lang)}</option>
-            <option value="oldest">⏱️ {t('master.sort.oldest', lang)}</option>
-          </select>
+          {/* Equipment Group Filter */}
+          <div className="flex-1">
+            <select
+              value={equipFilter}
+              onChange={(e) => setEquipFilter(e.target.value as EquipmentCategoryId | 'all')}
+              aria-label={t('master.filter_label_equip', lang)}
+              className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            >
+              <option value="all">🧩 {t('master.filter_any', lang)}</option>
+              {EQUIP_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  🧩 {t(EQUIP_CAT_KEY[c], lang)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort Selector */}
+          <div className="flex-1">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label={t('master.sort_label', lang)}
+              className="w-full bg-slate-100 text-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+            >
+              <option value="name_asc">🔤 {t('master.sort.name_asc', lang)}</option>
+              <option value="name_desc">🔤 {t('master.sort.name_desc', lang)}</option>
+              <option value="newest">⏱️ {t('master.sort.newest', lang)}</option>
+              <option value="oldest">⏱️ {t('master.sort.oldest', lang)}</option>
+            </select>
+          </div>
         </div>
+        {/* Clear filters */}
+        {(ageFilter !== 'all' || equipFilter !== 'all') && (
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => {
+                setAgeFilter('all');
+                setEquipFilter('all');
+              }}
+              className="text-[11px] font-semibold text-amber-700 hover:underline"
+            >
+              ✕ Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main List */}
@@ -149,7 +201,7 @@ export const PlaygroundCards: React.FC = () => {
             const shortDesc = pg.short_description[lang] || pg.short_description.en;
             const shadowText = pg.attributes.shadow_coverage[lang] || pg.attributes.shadow_coverage.en;
             const tempText = pg.attributes.surface_temperature[lang] || pg.attributes.surface_temperature.en;
-            const ageText = pg.attributes.target_age_group[lang] || pg.attributes.target_age_group.en;
+            const ageText = AGE_GROUP_LABELS[pg.attributes.target_age_group.id][lang];
 
             return (
               <a
@@ -204,6 +256,11 @@ export const PlaygroundCards: React.FC = () => {
                     <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200/70 text-[10px] font-bold flex items-center gap-1">
                       <span>👶</span> {ageText}
                     </span>
+                    {pg.equipment_types.length > 0 && (
+                      <span className="px-2.5 py-1 rounded-lg bg-violet-50 text-violet-900 border border-violet-200/70 text-[10px] font-bold flex items-center gap-1">
+                        <span>🧩</span> {pg.equipment_types.length}
+                      </span>
+                    )}
                   </div>
                 </div>
               </a>

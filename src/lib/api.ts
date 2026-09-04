@@ -49,6 +49,13 @@ export async function deletePlaygroundApi(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete playground');
 }
 
+export async function updateEquipmentApi(
+  id: string,
+  equipment: import('../types/playground').PlaygroundEquipmentItem[],
+): Promise<Playground> {
+  return updatePlayground(id, { equipment });
+}
+
 export async function uploadPhoto(
   playgroundId: string,
   photoId: string,

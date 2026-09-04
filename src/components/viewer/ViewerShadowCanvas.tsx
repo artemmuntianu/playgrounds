@@ -9,6 +9,14 @@ import { renderSegmentedScene } from '../../lib/segRenderer';
 import type { ShadowCameraParams } from '../../lib/shadowProjection';
 import type { SegmentationData } from '../../types/segmentation';
 
+/** A dot-marker to overlay onto the photo (normalised 0..1 coordinates). */
+export interface EquipmentMarkerDisplay {
+  x: number;
+  y: number;
+  label: string;
+  category: string;
+}
+
 interface ViewerShadowCanvasProps {
   imageUrl: string;
   depthMapUrl?: string;
@@ -20,7 +28,64 @@ interface ViewerShadowCanvasProps {
   isAdditional?: boolean;
   weather?: WeatherSnapshot | null;
   effects?: EnvironmentEffects;
+  /** Equipment dot-markers to draw on top of the photo (all photos). */
+  equipmentMarkers?: EquipmentMarkerDisplay[];
 }
+
+const CATEGORY_COLOR: Record<string, string> = {
+  ride_balance: '#f59e0b',
+  sport_complex: '#3b82f6',
+  development: '#8b5cf6',
+  rest: '#10b981',
+  default: '#047857',
+};
+
+/** Draw dot markers + labels, using the image's native pixel size as the canvas basis. */
+function drawEquipmentMarkers(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  markers: EquipmentMarkerDisplay[],
+): void {
+  for (const m of markers) {
+    const px = Math.min(Math.max(m.x, 0), 1) * w;
+    const py = Math.min(Math.max(m.y, 0), 1) * h;
+    const color = CATEGORY_COLOR[m.category] ?? CATEGORY_COLOR.default;
+
+    // Pin / dot
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.stroke();
+
+    // White center
+    ctx.beginPath();
+    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // Label box
+    const label = m.label;
+    ctx.font = 'bold 13px system-ui, sans-serif';
+    const textW = ctx.measureText(label).width;
+    const boxW = textW + 12;
+    const boxH = 20;
+    const boxX = Math.min(Math.max(px + 10, 4), Math.max(w - boxW - 4, 4));
+    const boxY = Math.max(py - boxH - 6, 4);
+
+    ctx.fillStyle = 'rgba(15,23,42,0.9)';
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 6);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, boxX + 6, boxY + boxH / 2 + 0.5);
+  }
+}
+
 
 export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   imageUrl,
@@ -33,6 +98,7 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
   isAdditional = false,
   weather,
   effects,
+  equipmentMarkers = [],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const baseImageRef = useRef<HTMLImageElement | null>(null);
@@ -191,6 +257,9 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     // 1. Draw base photo
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(baseImg, 0, 0, w, h);
+
+    // Draw equipment dot-markers (shown on every photo, incl. additional).
+    drawEquipmentMarkers(ctx, w, h, equipmentMarkers);
 
     // If it is an additional photo, we don't render shadows or sun overlay
     if (isAdditional) {

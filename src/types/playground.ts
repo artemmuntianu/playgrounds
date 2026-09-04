@@ -4,6 +4,44 @@ export interface LocalizedText {
   pt: string;
 }
 
+/** Named age group for a playground / equipment (replaces raw year ranges). */
+export type AgeGroup =
+  | 'toddlers'
+  | 'preschool'
+  | 'schoolchildren'
+  | 'teenagers'
+  | 'all';
+
+/** High-level grouping of playground equipment. */
+export type EquipmentCategoryId = 'ride_balance' | 'sport_complex' | 'development' | 'rest';
+
+/** Concrete element types an operator can place on a playground. */
+export type EquipmentTypeId =
+  // ride & balance
+  | 'swings_single' | 'swing_nest' | 'seesaw' | 'carousel' | 'slide'
+  // sport & game complexes
+  | 'ladder' | 'wall_bars' | 'monkey_bars' | 'rope_net' | 'pull_up_bar' | 'climbing_wall'
+  // development
+  | 'sandbox' | 'busy_board' | 'playhouse' | 'abacus'
+  // rest
+  | 'bench' | 'trash_bin' | 'canopy';
+
+/** A single dot-marker on a photo (normalised 0..1 within the photo). */
+export interface PhotoMarker {
+  photo_id: string;
+  x: number;
+  y: number;
+}
+
+/** One piece of playground equipment listed by the operator. */
+export interface PlaygroundEquipmentItem {
+  id: string;                 // unique within the playground, e.g. "slide_1"
+  type: EquipmentTypeId;      // category is derived from the catalog
+  age_group?: AgeGroup | null;// optional; null = not set
+  custom_name?: LocalizedText;// optional label override
+  markers: PhotoMarker[];     // dot markers on "our 4 photos"
+}
+
 /** A single photo of a playground with its annotation scene */
 export interface PlaygroundPhoto {
   /** Unique ID within the playground, e.g. "photo_1" */
@@ -30,8 +68,8 @@ export interface PlaygroundAttributes {
   shadow_coverage: LocalizedText;
   /** Surface temperature indicator. Examples: "Cool (~21°C)" / "Warm (~31°C)" */
   surface_temperature: LocalizedText;
-  /** Target age group. Examples: "3-7 years" / "All ages" */
-  target_age_group: LocalizedText;
+  /** Target age group (a vocabulary id; label comes from AGE_GROUP_LABELS). */
+  target_age_group: { id: AgeGroup };
 }
 
 /** Full playground entity stored in the file system */
@@ -55,6 +93,8 @@ export interface Playground {
   thumbnail_photo_id: string;
   /** Playground attributes shown in viewer */
   attributes: PlaygroundAttributes;
+  /** Elements listed by the operator (equipment + photo markers) */
+  equipment: PlaygroundEquipmentItem[];
   /** ISO 8601 creation timestamp */
   created_at: string;
   /** ISO 8601 last update timestamp */
@@ -71,6 +111,10 @@ export interface PlaygroundSummary {
   attributes: PlaygroundAttributes;
   photo_count: number;
   created_at: string;
+  /** Unique equipment types present (for the element-group filter). */
+  equipment_types: EquipmentTypeId[];
+  /** Age groups present among the playground's equipment (for the age filter). */
+  equipment_age_groups: AgeGroup[];
 }
 
 // --- Legacy types kept for backward compatibility with PlaygroundViewer.tsx ---

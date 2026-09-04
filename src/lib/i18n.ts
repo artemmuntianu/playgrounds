@@ -6,10 +6,11 @@ export const translations = {
   'nav.back': { en: '← Back', pt: '← Voltar' },
 
   // Master view
+  'master.filter.toddlers': { en: 'Toddlers (0-3)', pt: 'Bebés (0-3)' },
+  'master.filter.preschool': { en: 'Preschool (3-7)', pt: 'Pré-escolar (3-7)' },
+  'master.filter.schoolchildren': { en: 'Schoolchildren (7-12)', pt: 'Escolares (7-12)' },
+  'master.filter.teenagers': { en: 'Teenagers (12+)', pt: 'Adolescentes (12+)' },
   'master.filter.all': { en: 'All ages', pt: 'Todas as idades' },
-  'master.filter.0_3': { en: '0-3 years', pt: '0-3 anos' },
-  'master.filter.3_7': { en: '3-7 years', pt: '3-7 anos' },
-  'master.filter.7_plus': { en: '7+ years', pt: '7+ anos' },
   'master.sort.name_asc': { en: 'Name A-Z', pt: 'Nome A-Z' },
   'master.sort.name_desc': { en: 'Name Z-A', pt: 'Nome Z-A' },
   'master.sort.newest': { en: 'Newest', pt: 'Mais recente' },
@@ -17,7 +18,9 @@ export const translations = {
   'master.count': { en: '{n} playgrounds', pt: '{n} parques' },
   'master.empty': { en: 'No playgrounds available', pt: 'Nenhum parque disponível' },
   'master.filter_label': { en: 'Age Group', pt: 'Faixa Etária' },
+  'master.filter_label_equip': { en: 'Equipment', pt: 'Equipamento' },
   'master.sort_label': { en: 'Sort by', pt: 'Ordenar por' },
+  'master.filter_any': { en: 'Any', pt: 'Qualquer' },
 
   // Detail view
   'detail.time_machine': { en: 'Time Machine', pt: 'Máquina do Tempo' },
@@ -30,6 +33,15 @@ export const translations = {
   'detail.loading': { en: 'Loading...', pt: 'A carregar...' },
   'detail.not_found': { en: 'Playground not found', pt: 'Parque não encontrado' },
   'detail.gallery': { en: 'Gallery', pt: 'Galeria' },
+  'detail.markers.show': { en: 'Hide equipment (N)', pt: 'Ocultar equipamento (N)' },
+  'detail.markers.hide': { en: 'Show equipment', pt: 'Ver equipamento' },
+  'detail.equipment': { en: 'Equipment', pt: 'Equipamento' },
+
+  // Equipment categories
+  'equipment.cat.ride_balance': { en: 'Ride & balance', pt: 'Balanço & equilíbrio' },
+  'equipment.cat.sport_complex': { en: 'Sport & game', pt: 'Desporto & jogo' },
+  'equipment.cat.development': { en: 'Development', pt: 'Desenvolvimento' },
+  'equipment.cat.rest': { en: 'Rest', pt: 'Descanso' },
 
   // Orientation overlay
   'orientation.message': {

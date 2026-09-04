@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PlaygroundSummary } from '../../types/playground';
 import { fetchPlaygrounds, deletePlaygroundApi, createPlayground } from '../../lib/api';
+import { AGE_GROUP_LABELS } from '../../lib/equipmentCatalog';
 import { PlaygroundForm } from './PlaygroundForm';
 
 export const PlaygroundList: React.FC = () => {
@@ -161,8 +162,13 @@ export const PlaygroundList: React.FC = () => {
                         🌡️ {pg.attributes.surface_temperature.en}
                       </span>
                       <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-semibold text-[10px]">
-                        👶 {pg.attributes.target_age_group.en}
+                        👶 {AGE_GROUP_LABELS[pg.attributes.target_age_group.id].en}
                       </span>
+                      {pg.equipment_types.length > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-800 border border-violet-200 font-semibold text-[10px]">
+                          🧩 {pg.equipment_types.length} element{pg.equipment_types.length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </td>
 

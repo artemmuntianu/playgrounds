@@ -38,10 +38,11 @@ export const POST: APIRoute = async ({ request }) => {
       location_name: data.location_name || { en: '', pt: '' },
       photos: data.photos || [],
       thumbnail_photo_id: data.thumbnail_photo_id || '',
+      equipment: data.equipment || [],
       attributes: data.attributes || {
         shadow_coverage: { en: 'Medium shade', pt: 'Sombra média' },
         surface_temperature: { en: 'Warm (~28°C)', pt: 'Morno (~28°C)' },
-        target_age_group: { en: '3-7 years', pt: '3-7 anos' },
+        target_age_group: { id: 'preschool' },
       },
     });
 

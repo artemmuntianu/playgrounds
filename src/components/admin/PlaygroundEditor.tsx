@@ -3,6 +3,7 @@ import type { Playground } from '../../types/playground';
 import { fetchPlayground, updatePlayground } from '../../lib/api';
 import { PlaygroundForm } from './PlaygroundForm';
 import { PhotoManager } from './PhotoManager';
+import { EquipmentEditor } from './EquipmentEditor';
 
 interface PlaygroundEditorProps {
   playgroundId: string;
@@ -10,7 +11,7 @@ interface PlaygroundEditorProps {
 
 export const PlaygroundEditor: React.FC<PlaygroundEditorProps> = ({ playgroundId }) => {
   const [playground, setPlayground] = useState<Playground | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'photos'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'photos' | 'equipment'>('details');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -132,6 +133,17 @@ export const PlaygroundEditor: React.FC<PlaygroundEditorProps> = ({ playgroundId
         >
           <span>📸</span> Photos & Shadows ({playground.photos.length})
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('equipment')}
+          className={`px-5 py-3 text-xs font-bold border-b-2 transition flex items-center gap-2 ${
+            activeTab === 'equipment'
+              ? 'border-violet-600 text-violet-600'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <span>🧩</span> Elements & Markers ({playground.equipment.length})
+        </button>
       </div>
 
       {/* Tab Contents */}
@@ -149,6 +161,16 @@ export const PlaygroundEditor: React.FC<PlaygroundEditorProps> = ({ playgroundId
       {activeTab === 'photos' && (
         <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
           <PhotoManager playground={playground} onUpdate={setPlayground} />
+        </div>
+      )}
+
+      {activeTab === 'equipment' && (
+        <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+          <EquipmentEditor
+            playgroundId={playground.id}
+            initialEquipment={playground.equipment}
+            onUpdated={(equipment) => setPlayground((p) => (p ? { ...p, equipment } : p))}
+          />
         </div>
       )}
     </div>

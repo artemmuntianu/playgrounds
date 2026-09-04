@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { getPlayground } from './playground';
+import { getPlayground } from './repo';
 import { playgroundDir } from './paths';
 
 /**
