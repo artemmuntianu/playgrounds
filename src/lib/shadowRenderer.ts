@@ -4,6 +4,9 @@ import {
   type ShadowCameraParams,
 } from './shadowProjection';
 import { applyDepthWarpToPolygon } from './depthWarp';
+import { SHADOW_CONFIG } from './environmentConfig';
+import { paintSoftPolygon, toPixels } from './softShape';
+import { penumbraRadiusPx, shadowAnchorPx, shadowTipPx } from './penumbra';
 
 /**
  * Renders shadow polygons for a list of annotations onto a 2D canvas context.
@@ -80,27 +83,23 @@ export function renderShadows(
       polygon = applyDepthWarpToPolygon(polygon, depthMapImageData, direction);
     }
 
-    // Phase 5: multiply the shadow onto the photo.
-    ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
+    // Phase 5: multiply the shadow onto the photo with a soft, size-aware penumbra. `ctx.filter`
+    // is deliberately not used: WebKit (every browser on iOS) ignores it, which is why shadows
+    // used to render as hard, aliased stripes on mobile.
+    const pixels = toPixels(polygon, imageWidth, imageHeight);
+    const anchor = shadowAnchorPx(annotation, pixels, imageWidth, imageHeight);
 
-    const baseOpacity = Math.min(1, Math.max(0, annotation.canopy_opacity));
-
-    ctx.globalAlpha = baseOpacity;
-    ctx.fillStyle = 'rgb(18, 30, 50)';
-
-    // Soft penumbra: shadows are sharper for low objects, softer for tall ones.
-    const blurPx = Math.min(18, Math.max(1, annotation.height_meters * 0.8));
-    ctx.filter = `blur(${blurPx}px)`;
-
-    ctx.beginPath();
-    ctx.moveTo(polygon[0].x * imageWidth, polygon[0].y * imageHeight);
-    for (let i = 1; i < polygon.length; i++) {
-      ctx.lineTo(polygon[i].x * imageWidth, polygon[i].y * imageHeight);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+    paintSoftPolygon(ctx, polygon, imageWidth, imageHeight, {
+      blurRadiusPx: penumbraRadiusPx(pixels, solar.altitude_deg),
+      alpha: Math.min(1, Math.max(0, annotation.canopy_opacity)),
+      color: SHADOW_CONFIG.color,
+      composite: 'multiply',
+      fade: {
+        fromPx: anchor,
+        toPx: shadowTipPx(pixels, anchor),
+        toAlphaScale: SHADOW_CONFIG.tipFalloff,
+      },
+    });
   }
 
   // 2. Re-composite foreground objects (trees, slides, structures) ON TOP of

@@ -36,3 +36,49 @@ export const SEGMENT_DEFAULT_COLORS = {
   vertical: { r: 255, g: 60, b: 50 },
   ground: { r: 50, g: 190, b: 90 },
 } as const;
+
+/**
+ * Fixed (non-operator) render tuning. The engine is mobile-first: every smooth, full-frame
+ * effect layer is rendered at a capped resolution and upscaled, while the shadow layer stays at
+ * full resolution because it is the only pass that carries visible detail.
+ */
+export const RENDER_CONFIG = {
+  /** Long side (px) of the working canvas used for the smooth full-frame effect layers. */
+  effectWorkCapPx: 1024,
+  /** Long side (px) used when decoding a segmentation mask PNG (drives the per-pixel decode cost). */
+  segDecodeCapPx: 1024,
+  /** Feather (px, at mask resolution) applied to category masks so `destination-in` clipping is not 1-bit. */
+  maskFeatherPx: 1.25,
+  /** Scratch canvases are rounded up to this granularity so a time-slider drag does not reallocate. */
+  scratchGranularityPx: 64,
+  /** Blur radii below this are skipped (the pyramid would not add a level). */
+  blurMinRadiusPx: 1.25,
+  /** Maximum number of halving steps in the blur pyramid (=> ramp up to ~2^6 px). */
+  blurMaxLevels: 6,
+} as const;
+
+/**
+ * Shadow penumbra policy — the single source of realistic shadow softness on every engine.
+ *
+ * This replaces the old `ctx.filter = 'blur(...)'` approach: `CanvasRenderingContext2D.filter`
+ * is not Baseline (unsupported by WebKit, i.e. every browser on iOS), where the assignment is
+ * silently ignored and shadows are filled with hard, aliased edges.
+ */
+export const SHADOW_CONFIG = {
+  /** Penumbra as a fraction of the projected shadow's long side. */
+  penumbraBase: 0.055,
+  /** Extra penumbra towards a grazing sun (0 = disabled). */
+  lowSunBoost: 1.1,
+  /** Upper bound of the low-sun penumbra multiplier. */
+  maxSunFactor: 2.4,
+  /** Penumbra may not exceed this fraction of the shadow's short side (a thin sliver must stay readable). */
+  thinShapeRatio: 0.6,
+  /** Hard limits for the penumbra radius in destination pixels. */
+  minRadiusPx: 1.5,
+  maxRadiusPx: 26,
+  /** Alpha at the far end of a shadow relative to its base (contact-shadow falloff). */
+  tipFalloff: 0.68,
+  /** Cool ambient tint that is multiplied onto the ground. */
+  color: { r: 18, g: 30, b: 50 },
+} as const;
+

@@ -5,30 +5,34 @@ import { computeSunLightTarget } from './lighting';
 import { projectShadowPolygon, type ShadowCameraParams } from './shadowProjection';
 import { applyDepthWarpToPolygon } from './depthWarp';
 import { createCategoryMaskCanvas } from './segmentation';
+import { RENDER_CONFIG, SHADOW_CONFIG } from './environmentConfig';
+import { acquireScratch, blurCanvasOwned, fitWorkSize, paintSoftPolygon, toPixels } from './softShape';
+import { penumbraRadiusPx, shadowAnchorPx, shadowTipPx } from './penumbra';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function makeCanvas(width: number, height: number): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = width;
-  c.height = height;
-  return c;
-}
-
 const maskCache = new WeakMap<SegmentationData, Partial<Record<SegCategory, HTMLCanvasElement>>>();
 
+/**
+ * Category mask canvas, cached per segmentation payload and feathered once.
+ *
+ * A 1-bit mask used with `destination-in` produced hard, stair-stepped edges exactly where a
+ * shadow's penumbra is visible (the ground/object silhouette), which read as "bad rendering" on
+ * phones. The feather is baked into the cached canvas, so its cost is paid once per photo.
+ */
 function getMask(seg: SegmentationData, category: SegCategory): HTMLCanvasElement {
-  let rec = maskCache.get(seg);
-  if (!rec) {
-    rec = {};
-    maskCache.set(seg, rec);
+  let record = maskCache.get(seg);
+  if (!record) {
+    record = {};
+    maskCache.set(seg, record);
   }
-  if (!rec[category]) {
-    rec[category] = createCategoryMaskCanvas(seg, category);
+  if (!record[category]) {
+    const hard = createCategoryMaskCanvas(seg, category);
+    record[category] = blurCanvasOwned(hard, RENDER_CONFIG.maskFeatherPx);
   }
-  return rec[category]!;
+  return record[category]!;
 }
 
 /** Screen-space unit direction from the object's base toward the bulk of its cast shadow. */
@@ -51,7 +55,21 @@ function dominantShadowDirection(
   return { dx: dx / len, dy: dy / len };
 }
 
-/** Draws the projected shadow layer (multiply + blur) onto a given 2D context. */
+/**
+ * Paints the projected shadow layer onto `ctx` at full resolution.
+ *
+ * Every annotation is filled through `paintSoftPolygon`, which produces the penumbra with the
+ * engine-independent resolution pyramid in `softShape.ts`. `CanvasRenderingContext2D.filter` is
+ * deliberately never used: it is not Baseline (WebKit ignores it, i.e. all browsers on iOS) and
+ * silently degraded the shadows to hard, aliased, over-dark stripes on mobile.
+ *
+ * Softness is derived from the projected shadow itself (`penumbra.ts`), so a long low-sun shadow
+ * gets a wide, faint penumbra while a compact high-sun shadow stays crisp — and the falloff from
+ * the object's base towards the tip reproduces a real contact shadow.
+ *
+ * The layer is accumulated with `source-over`; the caller multiplies the finished layer onto the
+ * photo once, so overlapping shadows behave like one occluder instead of darkening repeatedly.
+ */
 export function drawShadowLayerToCanvas(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -59,12 +77,15 @@ export function drawShadowLayerToCanvas(
   annotations: Annotation[],
   solar: SolarPosition,
   cameraParams: ShadowCameraParams,
-  depthMapData?: ImageData | null
+  depthMapData?: ImageData | null,
+  penumbraStrength: number = 1
 ): void {
   for (const annotation of annotations) {
     if (!annotation.polygon_coordinates || annotation.polygon_coordinates.length < 3) continue;
+
     let polygon = projectShadowPolygon(annotation, solar, width, height, cameraParams);
     if (polygon.length < 3) continue;
+
     if (depthMapData) {
       polygon = applyDepthWarpToPolygon(
         polygon,
@@ -73,52 +94,59 @@ export function drawShadowLayerToCanvas(
       );
     }
 
-    ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.globalAlpha = Math.min(1, Math.max(0, annotation.canopy_opacity));
-    ctx.fillStyle = 'rgb(18, 30, 50)';
-    ctx.filter = `blur(${Math.min(18, Math.max(1, annotation.height_meters * 0.8))}px)`;
-    ctx.beginPath();
-    ctx.moveTo(polygon[0].x * width, polygon[0].y * height);
-    for (let i = 1; i < polygon.length; i++) {
-      ctx.lineTo(polygon[i].x * width, polygon[i].y * height);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
+    const pixels = toPixels(polygon, width, height);
+    const anchor = shadowAnchorPx(annotation, pixels, width, height);
+
+    paintSoftPolygon(ctx, polygon, width, height, {
+      blurRadiusPx: penumbraRadiusPx(pixels, solar.altitude_deg, penumbraStrength),
+      alpha: clamp(annotation.canopy_opacity, 0, 1),
+      color: SHADOW_CONFIG.color,
+      composite: 'source-over',
+      fade: {
+        fromPx: anchor,
+        toPx: shadowTipPx(pixels, anchor),
+        toAlphaScale: SHADOW_CONFIG.tipFalloff,
+      },
+    });
   }
 }
 
-/** Draws an effect offscreen, clips it to a category mask, then composites it with a blend mode. */
-function compositeMasked(
+/**
+ * Renders one smooth full-frame effect (sky gradient, ground sunlight, vertical light) at the
+ * capped working resolution, clips it to a category mask, then upscales it onto the photo.
+ *
+ * Safe to upscale: all three passes are gradients with no high-frequency detail, while capping
+ * keeps the per-render cost far below the photo's pixel count. This is what makes the engine
+ * mobile-first — a 12 MPx photo is no longer composited four times at full resolution on a phone.
+ */
+function compositeMaskedEffect(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  draw: (octx: CanvasRenderingContext2D) => void,
-  maskCanvas: HTMLCanvasElement,
-  blendMode: GlobalCompositeOperation
+  work: { width: number; height: number },
+  mask: HTMLCanvasElement,
+  blendMode: GlobalCompositeOperation,
+  draw: (octx: CanvasRenderingContext2D) => void
 ): void {
-  const off = makeCanvas(width, height);
-  const octx = off.getContext('2d');
-  if (!octx) return;
-  octx.clearRect(0, 0, width, height);
-  draw(octx);
-  octx.globalCompositeOperation = 'destination-in';
-  // Scale the mask to the canvas size so it always aligns with the base photo, even if the
-  // mask PNG has a different intrinsic resolution than the photo.
-  octx.drawImage(maskCanvas, 0, 0, width, height);
+  const effect = acquireScratch('effect', work.width, work.height, true);
+  draw(effect.ctx);
+  effect.ctx.globalCompositeOperation = 'destination-in';
+  effect.ctx.drawImage(mask, 0, 0, work.width, work.height);
+  effect.ctx.globalCompositeOperation = 'source-over';
+
   ctx.save();
   ctx.globalCompositeOperation = blendMode;
-  ctx.drawImage(off, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  // Explicit source rect: the scratch canvas may be padded beyond the working size.
+  ctx.drawImage(effect.canvas, 0, 0, work.width, work.height, 0, 0, width, height);
   ctx.restore();
 }
 
-
 /**
- * Paints the sky gradient + sun glow into an offscreen canvas that will later be clipped to
- * the sky mask. `cloudCoverPct` darkens and desaturates the gradient toward an overcast
- * blue-gray so the masked sky reflects the live cloud cover instead of staying a fixed
- * bright blue.
+ * Paints the sky gradient + sun glow into a canvas that will later be clipped to the sky mask.
+ * `cloudCoverPct` darkens and desaturates the gradient toward an overcast blue-gray so the masked
+ * sky reflects the live cloud cover instead of staying a fixed bright blue.
  */
 function renderSkyInto(
   ctx: CanvasRenderingContext2D,
@@ -177,7 +205,12 @@ function renderSkyInto(
   ctx.restore();
 }
 
-function renderGroundDirectInto(ctx: CanvasRenderingContext2D, w: number, h: number, target: SunLightTarget): void {
+function renderGroundDirectInto(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  target: SunLightTarget
+): void {
   const a = clamp(target.intensity, 0, 1) * 0.5;
   const { r, g, b } = target.color;
   const cx = target.inView ? clamp(target.screenX, 0, w) : target.screenDir.dx >= 0 ? w * 0.8 : w * 0.2;
@@ -191,7 +224,12 @@ function renderGroundDirectInto(ctx: CanvasRenderingContext2D, w: number, h: num
   ctx.fillRect(0, 0, w, h);
 }
 
-function renderVerticalLightInto(ctx: CanvasRenderingContext2D, w: number, h: number, target: SunLightTarget): void {
+function renderVerticalLightInto(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  target: SunLightTarget
+): void {
   const a = clamp(target.intensity, 0, 1) * 0.5;
   const { r, g, b } = target.color;
   const len = Math.max(w, h) * 0.5;
@@ -202,16 +240,23 @@ function renderVerticalLightInto(ctx: CanvasRenderingContext2D, w: number, h: nu
   const grad = ctx.createLinearGradient(sx, sy, ex, ey);
   grad.addColorStop(0, `rgba(${r},${g},${b},${a})`);
   grad.addColorStop(0.55, `rgba(${r},${g},${b},${a * 0.5})`);
-  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  grad.addColorStop(1, `rgba(0, 0, 0, 0)`);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
 }
 
 /**
- * Renders the full environment respecting the semantic mask: shadows only on the ground,
- * a sky gradient + sun glow masked to the sky, direct sunlight on the ground and a
- * directional light on vertical objects. Used instead of the ad-hoc shadow/light passes when
- * a segmentation mask is available.
+ * Renders the full environment for one photo, respecting the semantic mask: soft shadows on the
+ * ground only, a sky gradient + sun glow masked to the sky, direct sunlight on the ground and a
+ * directional light on vertical objects.
+ *
+ * Resolution strategy (mobile-first):
+ * - the shadow layer is painted at full resolution, because it is the only pass that carries
+ *   visible detail (vector fills plus a blur confined to each shadow's own bounding box);
+ * - the smooth full-frame passes are rendered at `RENDER_CONFIG.effectWorkCapPx` and upscaled;
+ * - every buffer is a pooled scratch canvas, so dragging the time slider does not allocate a
+ *   handful of full-resolution canvases per frame (the previous behaviour, and the main reason
+ *   the viewer janked and the shadow edges looked cheap on phones).
  */
 export function renderSegmentedScene(
   ctx: CanvasRenderingContext2D,
@@ -224,7 +269,8 @@ export function renderSegmentedScene(
   depthMapData?: ImageData | null,
   cloudCoverPct: number = 0,
   sunLightStrength?: number,
-  sunGlowAlpha?: number
+  sunGlowAlpha?: number,
+  penumbraStrength: number = 1
 ): void {
   const target = computeSunLightTarget(
     solar,
@@ -237,23 +283,47 @@ export function renderSegmentedScene(
   );
 
   const groundMask = getMask(seg, 'ground');
-  const skyMask = getMask(seg, 'sky');
-  const verticalMask = getMask(seg, 'vertical');
+  const work = fitWorkSize(width, height, RENDER_CONFIG.effectWorkCapPx);
 
-  compositeMasked(
-    ctx,
-    width,
-    height,
-    (octx) => drawShadowLayerToCanvas(octx, width, height, annotations, solar, cameraParams, depthMapData),
-    groundMask,
-    'multiply'
-  );
+  // 1. Shadows: full resolution, clipped to the ground, multiplied onto the photo as ONE layer,
+  //    so overlapping shadows behave like a single occluder instead of darkening repeatedly.
+  if (solar.altitude_deg > 0 && annotations.length > 0) {
+    const layer = acquireScratch('shadowLayer', width, height, true);
+    drawShadowLayerToCanvas(
+      layer.ctx,
+      width,
+      height,
+      annotations,
+      solar,
+      cameraParams,
+      depthMapData,
+      penumbraStrength
+    );
+    layer.ctx.globalCompositeOperation = 'destination-in';
+    layer.ctx.drawImage(groundMask, 0, 0, width, height);
+    layer.ctx.globalCompositeOperation = 'source-over';
 
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(layer.canvas, 0, 0, width, height, 0, 0, width, height);
+    ctx.restore();
+  }
+
+  // 2. Sky, ground sunlight and vertical light, each clipped to its own semantic class. Skipped
+  //    entirely at night (`target.altitude_deg <= 0`), which also skips building the sky mask.
   if (target.altitude_deg > 0) {
-    compositeMasked(ctx, width, height, (octx) => renderSkyInto(octx, width, height, target, cloudCoverPct, sunGlowAlpha), skyMask, 'source-over');
-    compositeMasked(ctx, width, height, (octx) => renderGroundDirectInto(octx, width, height, target), groundMask, 'screen');
+    compositeMaskedEffect(ctx, width, height, work, getMask(seg, 'sky'), 'source-over', (octx) =>
+      renderSkyInto(octx, work.width, work.height, target, cloudCoverPct, sunGlowAlpha)
+    );
+    compositeMaskedEffect(ctx, width, height, work, groundMask, 'screen', (octx) =>
+      renderGroundDirectInto(octx, work.width, work.height, target)
+    );
     if (annotations.length > 0) {
-      compositeMasked(ctx, width, height, (octx) => renderVerticalLightInto(octx, width, height, target), verticalMask, 'screen');
+      compositeMaskedEffect(ctx, width, height, work, getMask(seg, 'vertical'), 'screen', (octx) =>
+        renderVerticalLightInto(octx, work.width, work.height, target)
+      );
     }
   }
 }
+
+

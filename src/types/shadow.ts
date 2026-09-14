@@ -47,6 +47,12 @@ export interface SceneAnnotation {
      * Lower it to tame a blown-out white hotspot around the sun.
      */
     sun_sky_glow?: number;
+    /**
+     * Operator tuning knob (0.2..4, default 1): scales the shadow penumbra. The engine derives the
+     * softness from the projected shadow itself, so this is a taste knob only — lower it for
+     * crisper shadows on an already-soft photo, raise it for a hazier, low-sun look.
+     */
+    penumbra_strength?: number;
   };
   annotations: Annotation[];
 }

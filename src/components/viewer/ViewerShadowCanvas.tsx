@@ -9,6 +9,7 @@ import { renderSegmentedScene } from '../../lib/segRenderer';
 import type { ShadowCameraParams } from '../../lib/shadowProjection';
 import type { SegmentationData } from '../../types/segmentation';
 import { getCategoryColor } from '../../lib/equipment';
+import { releaseScratch } from '../../lib/softShape';
 
 /** A dot-marker to overlay onto the photo (normalised 0..1 coordinates). */
 export interface EquipmentMarkerDisplay {
@@ -237,6 +238,10 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     };
   }, [segMaskUrl, isAdditional]);
 
+  // Release the pooled render canvases when the viewer is left, so a phone does not keep the
+  // working memory of the last photo allocated.
+  useEffect(() => () => releaseScratch(), []);
+
   // Load Base Image
   useEffect(() => {
     if (!imageUrl) return;
@@ -327,7 +332,8 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
         depthMapData,
         cloudCoverPct,
         meta?.sun_light_strength,
-        meta?.sun_sky_glow
+        meta?.sun_sky_glow,
+        meta?.penumbra_strength
       );
     }
 

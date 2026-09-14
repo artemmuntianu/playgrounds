@@ -1,5 +1,6 @@
 import type { SegCategory, SegColorMap, SegmentationData } from '../types/segmentation';
-import { SEG_CATEGORY_ORDER, SEGMENT_DEFAULT_COLORS } from './environmentConfig';
+import { RENDER_CONFIG, SEG_CATEGORY_ORDER, SEGMENT_DEFAULT_COLORS } from './environmentConfig';
+import { fitWorkSize } from './softShape';
 
 function categoryIndex(category: SegCategory): number {
   return SEG_CATEGORY_ORDER.indexOf(category);
@@ -41,11 +42,17 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 /** Loads a 3-colour mask PNG and decodes it into a per-pixel category array. */
 export async function loadSegmentationMask(
   url: string,
-  colorMap: SegColorMap = SEGMENT_DEFAULT_COLORS
+  colorMap: SegColorMap = SEGMENT_DEFAULT_COLORS,
+  maxDimension: number = RENDER_CONFIG.segDecodeCapPx
 ): Promise<SegmentationData> {
   const img = await loadImage(url);
-  const w = img.naturalWidth || img.width;
-  const h = img.naturalHeight || img.height;
+  const source = fitWorkSize(
+    img.naturalWidth || img.width,
+    img.naturalHeight || img.height,
+    maxDimension
+  );
+  const w = source.width;
+  const h = source.height;
 
   const canvas = document.createElement('canvas');
   canvas.width = w;
@@ -53,7 +60,11 @@ export async function loadSegmentationMask(
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not create 2d context for segmentation mask');
 
-  ctx.drawImage(img, 0, 0);
+  // Nearest-neighbour: the mask is three flat colours, and any bilinear blending between them
+  // would create in-between colours that `classifyPixel` maps to an arbitrary category. Sampling
+  // also caps the decode cost, which is a per-pixel loop over the whole mask on the main thread.
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0, 0, w, h);
   const data = ctx.getImageData(0, 0, w, h).data;
   const categories = new Uint8Array(w * h);
 

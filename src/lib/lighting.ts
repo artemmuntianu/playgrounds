@@ -1,6 +1,8 @@
 import type { Annotation, SolarPosition } from '../types/shadow';
 import type { SunLightTarget, LightRenderConfig, CloudRenderConfig } from '../types/environment';
 import { cloudDimFactor, skyOverlayColor } from './clouds';
+import { RENDER_CONFIG } from './environmentConfig';
+import { paintSoftPolygon } from './softShape';
 import { computeSunScreenInfo } from './sunOverlay';
 
 const DEG_TO_RAD = Math.PI / 180;
@@ -152,25 +154,23 @@ export function renderObjectSunlight(
   const ox = config.offsetPx * target.screenDir.dx;
   const oy = config.offsetPx * target.screenDir.dy;
 
-  ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = alpha;
-  ctx.filter = `blur(${config.blurPx}px)`;
-  ctx.fillStyle = `rgb(${r},${g},${b})`;
+  // Penumbra through the engine-independent pyramid in `softShape`: `ctx.filter` is unsupported in
+  // WebKit (every browser on iOS) and silently produced hard-edged light patches on phones.
+  const blurRadiusPx = config.blurPx * (Math.max(width, height) / RENDER_CONFIG.effectWorkCapPx);
 
   for (const annotation of annotations) {
     const pts = annotation.polygon_coordinates;
     if (!pts || pts.length < 3) continue;
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x * width + ox, pts[0].y * height + oy);
-    for (let i = 1; i < pts.length; i++) {
-      ctx.lineTo(pts[i].x * width + ox, pts[i].y * height + oy);
-    }
-    ctx.closePath();
-    ctx.fill();
+    // The offset is applied in normalised space so `paintSoftPolygon` can keep working in the
+    // photo's own coordinate frame.
+    const shifted = pts.map((p) => ({ x: p.x + ox / width, y: p.y + oy / height }));
+    paintSoftPolygon(ctx, shifted, width, height, {
+      blurRadiusPx,
+      alpha,
+      color: { r, g, b },
+      composite: 'screen',
+    });
   }
-
-  ctx.restore();
 }
 
 /** Full-frame sky tint (night / overcast). No-op on a clear day. */
