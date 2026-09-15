@@ -9,12 +9,13 @@ from here. Do not invent parallel shapes in components.
   `EquipmentTypeId`, `PhotoMarker`, `PlaygroundEquipmentItem`, `PlaygroundPhoto`,
   `PlaygroundAttributes`, `Playground`, `PlaygroundSummary`.
 - `shadow.ts` — `Point2D` (normalised, **may be <0 or >1** off-frame), `Annotation`
-  (incl. optional `ground_projection_coordinates` for open structures and `is_offscreen`),
+  (incl. optional `ground_projection_coordinates` for open structures, the operator-set
+  `depth_cm` — the object's real depth, which the engine extrudes the polygon by — and
+  `is_offscreen`),
   `SceneAnnotation` (`scene_metadata`: `camera_azimuth_deg`, `camera_fov_deg`, `camera_pitch_deg`,
-  `horizon_y`, `sun_light_strength`, `sun_sky_glow`), `SolarPosition`, `ShadowLayer`.
+  `horizon_y`, `sun_light_strength`, `sun_sky_glow`), `SolarPosition`.
 - `environment.ts` — `WeatherSnapshot`, `WeatherDayHourly`, `SunLightTarget`, config interfaces
-  (`LightRenderConfig`, `RainRenderConfig`, `CloudRenderConfig`), `EnvironmentEffects`,
-  `EnvironmentState`.
+  (`LightRenderConfig`, `RainRenderConfig`, `CloudRenderConfig`), `EnvironmentEffects`.
 - `segmentation.ts` — `SegCategory` (`sky|vertical|ground`), `SegColor`, `SegColorMap`,
   `SegmentationData` (per-pixel `categories` in `SEG_CATEGORY_ORDER` order).
 - `reference.ts` — `AgeGroupInfo`, `EquipmentCategoryInfo`, `EquipmentCatalogEntry`, `ReferenceBundle`.

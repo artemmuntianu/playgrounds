@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Annotation, Point2D, SceneAnnotation } from '../../types/shadow';
+import { clampObjectDepthCm } from '../../lib/environmentConfig';
 
-// Height is no longer operator-provided. The projection derives shadow length from the polygon,
-// anchor, horizon and sun — not from this value. It only drives shadow blur softness, so a fixed
-// default is used.
-const DEFAULT_HEIGHT_METERS = 10;
+// Depth offered for a newly drawn object, in centimetres. With a depth the engine treats the drawn
+// polygon as the near face of a solid volume and casts the shadow of the whole volume (see
+// `projectShadowPolygons` in lib/shadowProjection.ts), which is what gives a shadow real thickness.
+// 0 = flat cutout (legacy behaviour, no volume).
+const DEFAULT_DEPTH_CM = 100;
 
 interface UseAnnotationToolArgs {
   imageUrl: string;
@@ -49,6 +51,9 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
   const [objectId, setObjectId] = useState('');
   const [category, setCategory] = useState<'tree' | 'structure' | 'building' | 'other'>('tree');
   const [canopyOpacity, setCanopyOpacity] = useState<number>(0.85);
+  // Operator-supplied object depth in centimetres (the "thickness" of the annotated volume).
+  const [objectDepthCm, setObjectDepthCmRaw] = useState<number>(DEFAULT_DEPTH_CM);
+  const setObjectDepthCm = (value: number) => setObjectDepthCmRaw(clampObjectDepthCm(value));
   const [isOffscreen, setIsOffscreen] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -483,10 +488,10 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     const newAnn: Annotation = {
       id: uniqueId,
       category: 'tree',
-      height_meters: DEFAULT_HEIGHT_METERS,
       canopy_opacity: 0.85,
       ground_anchor: anchor,
       polygon_coordinates: poly,
+      depth_cm: DEFAULT_DEPTH_CM,
       is_offscreen: true,
     };
 
@@ -510,10 +515,10 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     const newAnnotation: Annotation = {
       id: cleanId,
       category,
-      height_meters: DEFAULT_HEIGHT_METERS,
       canopy_opacity: Number(canopyOpacity),
       ground_anchor: defaultAnchor,
       polygon_coordinates: activePolygon,
+      depth_cm: clampObjectDepthCm(objectDepthCm),
       is_offscreen: isOffscreen,
     };
 
@@ -522,6 +527,7 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     setActiveAnchor(null);
     setShowForm(false);
     setObjectId('');
+    setObjectDepthCmRaw(DEFAULT_DEPTH_CM);
     setFormError(null);
     setMode('idle');
   };
@@ -529,6 +535,14 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
   const handleDeleteAnnotation = (id: string) => {
     setAnnotations(annotations.filter((a) => a.id !== id));
     setSelectedAnnotationId((cur) => (cur === id ? null : cur));
+  };
+
+  /**
+   * Patches one already-drawn object (depth, opacity, …). Used by the sidebar's selected-object
+   * editor, so the operator can correct an object without deleting and redrawing it.
+   */
+  const handleUpdateAnnotation = (id: string, patch: Partial<Annotation>) => {
+    setAnnotations((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
   };
 
   const handleExportScene = () => {
@@ -565,6 +579,7 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     objectId, setObjectId,
     category, setCategory,
     canopyOpacity, setCanopyOpacity,
+    objectDepthCm, setObjectDepthCm,
     isOffscreen, setIsOffscreen,
     formError, setFormError,
     containerRef, imageRef, canvasRef,
@@ -575,6 +590,7 @@ export function useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene 
     handleAddOffscreenPreset,
     handleAddAnnotation,
     handleDeleteAnnotation,
+    handleUpdateAnnotation,
     handleExportScene,
   };
 }

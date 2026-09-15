@@ -63,11 +63,13 @@ Rules that MUST hold:
 ## 5. Canonical invariants (do not break)
 
 1. **The public viewer is the single renderer.** `ViewerShadowCanvas` (canvas 2D) is the only
-   place that may call `renderShadows()` and the `render*`/`segRenderer` helpers. The old
-   `ShadowPreview` / `ShadowPipelineApp` were removed — do not resurrect them.
+   place that may call `renderSegmentedScene()` and the `render*` helpers. The old
+   `ShadowPreview` / `ShadowPipelineApp` were removed and the last unused render path
+   (`shadowRenderer.ts` / `renderShadows()`) was deleted — do not resurrect a second renderer.
 2. **Shadow maths are an approximation** (pinhole ground-plane projection; each object is a
-   vertical billboard at its `ground_anchor` depth) — NOT a full 3D reconstruction. Never
-   "improve" it into a uniform polygon translation or a horizon clamp/fade, and never add
+   vertical prism — a billboard at its `ground_anchor` depth, extruded backwards by the
+   operator-supplied `Annotation.depth_cm`) — NOT a full 3D reconstruction. Never "improve" it
+   into a uniform screen-space polygon translation or a horizon clamp/fade, and never add
    dependencies to the `lib` engine.
 3. **Coordinates are normalised** and may fall outside `[0,1]` (off-screen objects still cast
    shadows). `horizon_y` may be a fraction (≤1) OR a pixel row; resolve before use.
@@ -82,6 +84,15 @@ Rules that MUST hold:
 
 The following were dead or replaced metadata-with-filesystem fallbacks, so they were deleted:
 
+- `lib/shadowRenderer.ts` (`renderShadows`) — the last non-segmented shadow pass; the viewer has
+  used `segRenderer.ts` (`renderSegmentedScene`) exclusively since the mobile-first rework.
+- The four unused light-pass helpers of the pre-segmented renderer (`lib/lighting.ts`:
+  `renderSunDisc`, `renderGroundSunlight`, `renderObjectSunlight`, `renderSkyTint`) and their only
+  consumer `lib/clouds.ts#skyOverlayColor`. The live sky / ground / vertical passes are the masked
+  ones in `lib/lightPasses.ts`, fed by `computeSunLightTarget()`.
+- The metre-based leftovers of the pre-perspective engine: `Annotation.height_meters` (written but
+  never read), `computeShadowLength()` and `METRES_TO_NORM_SCALE`. Absolute sizes now arrive only
+  as `Annotation.depth_cm`, converted through `SHADOW_CONFIG.assumedCameraHeightM`.
 - The **three.js editor** (`PortalDashboard.tsx`, `PlaygroundViewer.tsx`, `ClimateControls.tsx`),
   the legacy `PlaygroundElement` / `PlaygroundManifest` types and `types/three-examples.d.ts`,
   plus the `three` + `@types/three` deps. It was not wired to any route.

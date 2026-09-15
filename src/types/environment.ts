@@ -1,5 +1,3 @@
-import type { SolarPosition } from './shadow';
-
 /** One-hour weather sample from Open-Meteo (or fixture). */
 export interface WeatherSnapshot {
   temperature_c: number;
@@ -62,12 +60,4 @@ export interface EnvironmentEffects {
   rain: RainRenderConfig;
   clouds: CloudRenderConfig;
   wetGround: boolean;
-}
-
-export interface EnvironmentState {
-  minutes: number;                 // minutes from 00:00
-  date: Date;
-  solar: SolarPosition | null;     // null when night (altitude <= 0)
-  weather: WeatherSnapshot | null;
-  effects: EnvironmentEffects;
 }

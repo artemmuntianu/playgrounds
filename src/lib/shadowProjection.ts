@@ -1,14 +1,8 @@
 import type { Annotation, Point2D, SolarPosition } from '../types/shadow';
+import { SHADOW_CONFIG, clampObjectDepthCm } from './environmentConfig';
 
 const DEG_TO_RAD = Math.PI / 180;
 const MAX_COORD = 1e5; // safe canvas coordinate magnitude before clipping
-
-/**
- * Legacy scale constant: converts a shadow length in metres into naive
- * normalised image units. Retained for backwards compatibility (Phase 3 plan);
- * the perspective projection used by `projectShadowPolygon` does not need it.
- */
-export const METRES_TO_NORM_SCALE = 0.015;
 
 /**
  * Optional scene/camera parameters that fully describe how the annotated
@@ -41,24 +35,6 @@ interface GroundCamera {
   cosP: number;
   /** Horizon row in pixels. */
   horizonPx: number;
-}
-
-/**
- * Real-world shadow length L in metres for a given height and sun altitude:
- * L = height / tan(altitude). Returns 0 when the sun is at/below the horizon.
- */
-export function computeShadowLength(
-  height_meters: number,
-  altitude_deg: number
-): number {
-  if (altitude_deg <= 0 || height_meters <= 0) {
-    return 0;
-  }
-  const altRad = (altitude_deg * DEG_TO_RAD) % (Math.PI / 2);
-  if (altRad <= 0) {
-    return 0;
-  }
-  return height_meters / Math.tan(altRad);
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -133,12 +109,58 @@ function farDepthFallback(cam: GroundCamera): number {
 }
 
 /**
+ * Depth of the annotated volume along the view axis, in camera-height units (C).
+ *
+ * The annotated silhouette is the *near* face of the object: the operator supplies how deep the
+ * object is in centimetres (`Annotation.depth_cm`) and the engine casts the shadow of the whole
+ * extruded volume instead of a zero-thickness billboard's.
+ *
+ * The projection is scale-invariant — every distance lives in units of the (unknown) camera height
+ * C — so a centimetre value can only be expressed in those units through one assumed real-world
+ * distance, `SHADOW_CONFIG.assumedCameraHeightM` (1.6 m, eye level of the photographer). Returns 0
+ * (=> legacy flat cutout) when no depth was supplied.
+ */
+function objectDepthOffset(annotation: Annotation): number {
+  const depthCm = clampObjectDepthCm(annotation.depth_cm ?? 0);
+  if (depthCm <= 0) {
+    return 0;
+  }
+  return depthCm / 100 / SHADOW_CONFIG.assumedCameraHeightM;
+}
+
+/**
+ * Side band of the extruded volume: two triangles per polygon edge, connecting the near ring to the
+ * far ring.
+ *
+ * The band is what makes a deep object's shadow a solid prism shadow. Without it, the shadow of a
+ * deep but small-footprint object (a slide leg, a post) would read as two detached blobs, because
+ * the volume in between blocks the light as well. It is emitted as triangles (never a bow-tie quad)
+ * and filled together with the two rings in ONE path — see `paintSoftPolygon` — so overlapping
+ * pieces produce a single alpha instead of darkening each other.
+ */
+function extrudeRingBand(near: Point2D[], far: Point2D[]): Point2D[][] {
+  const count = Math.min(near.length, far.length);
+  if (count < 3) {
+    return [];
+  }
+  const band: Point2D[][] = [];
+  for (let i = 0; i < count; i++) {
+    const j = (i + 1) % count;
+    band.push([near[i], far[i], far[j]]);
+    band.push([near[i], far[j], near[j]]);
+  }
+  return band;
+}
+
+
+/**
  * Projects an annotated 2D polygon onto the ground plane with a proper pinhole
  * camera whose intrinsics come from the user supplied scene data (FOV,
  * horizon/pitch and camera azimuth).
  *
- * Model: the annotated silhouette is treated as a vertical "cutout" standing at
- * the horizontal depth of its `ground_anchor`. For every silhouette vertex:
+ * Model: the annotated silhouette is treated as the *near face* of a vertical
+ * prism standing at the horizontal depth of its `ground_anchor`. For every
+ * silhouette vertex:
  *
  *   1. its screen row is converted into a height above the ground in units of
  *      the (unknown) camera height C:
@@ -151,6 +173,15 @@ function farDepthFallback(cam: GroundCamera): number {
  * scale-invariant, and it stays valid for polygon vertices that live in the
  * off-screen margin (x/y outside [0, 1]).
  *
+ * Operator-supplied depth (`annotation.depth_cm`, centimetres): the object is a
+ * solid that extends that far AWAY FROM THE CAMERA from the annotated face, so
+ * the same silhouette is projected twice — once from its own ground footprint
+ * (the near ring) and once from the footprint shifted by that depth (the far
+ * ring) — plus the side band between the two (`extrudeRingBand`). A depth of 0
+ * returns just the near ring, i.e. the original flat-cutout behaviour. This is
+ * a ground-space offset in depth followed by a re-projection, never a uniform
+ * screen-space translation.
+ *
  * Optional per-vertex "ground projection" mode: when the annotation also
  * supplies `ground_projection_coordinates` (one ground point per silhouette
  * vertex - the point of ground vertically below that vertex), each vertex is
@@ -158,16 +189,16 @@ function farDepthFallback(cam: GroundCamera): number {
  * depth. This is used for open / slanted structures (swing legs, bars, roof
  * edges) where the billboard assumption places shadows on top of the object.
  *
- * Returns the shadow polygon in normalised image coordinates.
+ * Returns the shadow shape as a list of rings / triangles in normalised image
+ * coordinates; the first entry is always the primary (near) ring.
  */
-
-export function projectShadowPolygon(
+export function projectShadowPolygons(
   annotation: Annotation,
   solar: SolarPosition,
   imageWidth: number,
   imageHeight: number,
   params: ShadowCameraParams = {}
-): Point2D[] {
+): Point2D[][] {
   const polygon = annotation.polygon_coordinates || [];
 
   if (polygon.length === 0) {
@@ -175,7 +206,7 @@ export function projectShadowPolygon(
   }
   if (solar.altitude_deg <= 0) {
     // Night / sun below the horizon - no shadow is cast.
-    return polygon.map((pt) => ({ ...pt }));
+    return [polygon.map((pt) => ({ ...pt }))];
   }
 
   const cam = buildGroundCamera(imageWidth, imageHeight, params);
@@ -205,6 +236,7 @@ export function projectShadowPolygon(
 
   // Forward (depth) component of a ground point at depthAnchor, in C units.
   const forwardAnchor = depthAnchor * cam.cosP + cam.sinP;
+
 
   // Optional per-vertex ground projections ("open structure" / element mode):
   // when an annotation carries one ground point per silhouette vertex, every
@@ -276,45 +308,66 @@ export function projectShadowPolygon(
   const anchorOnVisibleGround =
     anchorPx.y >= cam.horizonPx + 2 && anchorPx.y <= imageHeight;
 
-  const mapped: Point2D[] = [];
-  for (let i = 0; i < polygon.length; i++) {
-    const pt = polygon[i];
+  // Ground footprint of the anchor itself (used by the floating-canopy bridge).
+  const anchorLateral = ((anchorPx.x - cam.cx) / cam.f) * forwardAnchor;
 
-    const heightRatio = vertexHeights[i];
-    // Shadow length on the ground, in camera-height units.
-    const shadowLen = heightRatio / tanAltitude;
 
-    // Shadow tip = the vertex's own ground footprint displaced away from the
-    // sun (lateral/depth components, both in C units).
-    const tipLateral = vertexLateral[i] + shadowLen * sinBeta;
-    const tipDepth = vertexDepths[i] + shadowLen * cosBeta;
-
-    // Re-project the ground shadow tip (Z = 0) back into the image.
-    let forwardTip = tipDepth * cam.cosP + cam.sinP;
-    if (!(forwardTip > 1e-3)) {
-      // Tip crossed the camera plane / went behind the camera: clamp it just in
-      // front of the camera so the shadow extends to (and beyond) the bottom
-      // edge of the frame instead of producing a garbage coordinate.
-      forwardTip = 1e-3;
+  /**
+   * Re-projects a ground point (lateral offset + depth, both in C units, Z = 0)
+   * back into normalised image coordinates. A tip that crosses the camera plane
+   * is clamped just in front of the camera so the shadow extends to (and beyond)
+   * the bottom edge of the frame instead of producing a garbage coordinate.
+   */
+  const projectGroundPoint = (lateral: number, depth: number): Point2D | null => {
+    let forward = depth * cam.cosP + cam.sinP;
+    if (!(forward > 1e-3)) {
+      forward = 1e-3;
     }
-    const uTip = (cam.cosP - tipDepth * cam.sinP) / forwardTip;
-    const xTip = cam.cx + (cam.f * tipLateral) / forwardTip;
-    const yTip = cam.cy + cam.f * uTip;
+    const u = (cam.cosP - depth * cam.sinP) / forward;
+    const x = cam.cx + (cam.f * lateral) / forward;
+    const y = cam.cy + cam.f * u;
 
-    if (!Number.isFinite(xTip) || !Number.isFinite(yTip)) {
-      mapped.push({ ...pt });
-      continue;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      return null;
+    }
+    return {
+      x: clamp(x, -MAX_COORD, MAX_COORD) / imageWidth,
+      y: clamp(y, -MAX_COORD, MAX_COORD) / imageHeight,
+    };
+  };
+
+  /**
+   * One shadow ring: the shadow tips of every silhouette vertex, computed from
+   * the vertex's own ground footprint displaced away from the sun, with an extra
+   * `depthOffset` (C units) applied to that footprint for the far face.
+   *
+   * The vertex heights are shared between rings: the far face is the same
+   * silhouette moved backwards in depth, not a re-derived object height.
+   */
+  const buildRing = (depthOffset: number): Point2D[] => {
+    const ring: Point2D[] = [];
+    for (let i = 0; i < polygon.length; i++) {
+      const shadowLen = vertexHeights[i] / tanAltitude;
+      const tip = projectGroundPoint(
+        vertexLateral[i] + shadowLen * sinBeta,
+        vertexDepths[i] + depthOffset + shadowLen * cosBeta
+      );
+      ring.push(tip ?? { ...polygon[i] });
     }
 
-    mapped.push({
-      x: clamp(xTip, -MAX_COORD, MAX_COORD) / imageWidth,
-      y: clamp(yTip, -MAX_COORD, MAX_COORD) / imageHeight,
-    });
+    if (floatingCanopy && anchorOnVisibleGround) {
+      const anchorTip = projectGroundPoint(anchorLateral, depthAnchor + depthOffset);
+      ring.push(anchorTip ?? { x: anchor.x, y: anchor.y });
+    }
+    return ring;
+  };
+
+  const nearRing = buildRing(0);
+  const depthOffset = objectDepthOffset(annotation);
+  if (depthOffset <= 0) {
+    return [nearRing];
   }
 
-  if (floatingCanopy && anchorOnVisibleGround) {
-    mapped.push({ x: anchor.x, y: anchor.y });
-  }
-
-  return mapped;
+  const farRing = buildRing(depthOffset);
+  return [nearRing, farRing, ...extrudeRingBand(nearRing, farRing)];
 }

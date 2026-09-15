@@ -19,7 +19,7 @@ export function getSolarPosition(
   longitude_deg: number
 ): SolarPosition {
   const year = date.getUTCFullYear();
-  let month = date.getUTCMonth() + 1; // 1-12
+  const month = date.getUTCMonth() + 1; // 1-12
   const day = date.getUTCDate();
   const hours =
     date.getUTCHours() +

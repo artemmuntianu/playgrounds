@@ -30,12 +30,13 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
     activeGroundBases, setActiveGroundBases,
     showForm, setShowForm, objectId, setObjectId, category, setCategory,
     canopyOpacity, setCanopyOpacity,
+    objectDepthCm, setObjectDepthCm,
     isOffscreen, formError,
     containerRef, imageRef, canvasRef,
     getImageRectMetrics, drawOverlay,
     handleCanvasClick, handleDoubleClick,
     handleFinishObject, handleAddOffscreenPreset, handleAddAnnotation,
-    handleDeleteAnnotation, handleExportScene,
+    handleDeleteAnnotation, handleUpdateAnnotation, handleExportScene,
   } = useAnnotationTool({ imageUrl, depthMapUrl, onSave, initialScene });
 
   return (
@@ -83,6 +84,8 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
         setCategory={setCategory}
         canopyOpacity={canopyOpacity}
         setCanopyOpacity={setCanopyOpacity}
+        objectDepthCm={objectDepthCm}
+        setObjectDepthCm={setObjectDepthCm}
         handleAddAnnotation={handleAddAnnotation}
         setShowForm={setShowForm}
         sceneId={sceneId}
@@ -101,6 +104,7 @@ export const AnnotationTool: React.FC<AnnotationToolProps> = ({
         selectedAnnotationId={selectedAnnotationId}
         setSelectedAnnotationId={setSelectedAnnotationId}
         handleDeleteAnnotation={handleDeleteAnnotation}
+        handleUpdateAnnotation={handleUpdateAnnotation}
         handleExportScene={handleExportScene}
       />
     </div>

@@ -78,7 +78,27 @@ export const SHADOW_CONFIG = {
   maxRadiusPx: 26,
   /** Alpha at the far end of a shadow relative to its base (contact-shadow falloff). */
   tipFalloff: 0.68,
+  /**
+   * Metric anchor for operator-supplied real-world sizes (`Annotation.depth_cm`). The projection
+   * works in units of the (unknown) camera height C, so an absolute size can only be expressed in
+   * those units through one assumed real-world distance: 1.6 m is a standing photographer's eye
+   * level, which is how these photos are taken.
+   */
+  assumedCameraHeightM: 1.6,
+  /** Upper bound for an operator-supplied object depth (cm); anything larger is clamped. */
+  maxObjectDepthCm: 2000,
   /** Cool ambient tint that is multiplied onto the ground. */
   color: { r: 18, g: 30, b: 50 },
 } as const;
+
+
+/**
+ * Single source of truth for an operator-supplied object depth (`Annotation.depth_cm`, admin UI):
+ * non-finite input becomes 0 (flat cutout) and the value is clamped to the range the projection
+ * supports. Used by the admin form/editor and by the projection itself.
+ */
+export function clampObjectDepthCm(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(SHADOW_CONFIG.maxObjectDepthCm, Math.max(0, Math.round(value)));
+}
 

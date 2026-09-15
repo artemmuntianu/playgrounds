@@ -8,7 +8,6 @@ export interface Point2D {
 export interface Annotation {
   id: string;
   category: "tree" | "structure" | "building" | "other";
-  height_meters: number;       // real-world height in metres
   canopy_opacity: number;      // 0.0 (transparent) to 1.0 (opaque)
   ground_anchor: Point2D;      // base of object on the ground plane
   polygon_coordinates: Point2D[]; // silhouette/crown polygon (normalised)
@@ -24,6 +23,17 @@ export interface Annotation {
    * ground position instead of across the object itself.
    */
   ground_projection_coordinates?: Point2D[];
+  /**
+   * Real-world depth of the object along the view axis, in centimetres (operator input, default
+   * 100). The annotated silhouette is treated as the *near* face of a solid that extends
+   * `depth_cm` further away from the camera, and the shadow of that whole volume is cast instead
+   * of a zero-thickness billboard's. `0` (or missing) keeps the legacy flat-cutout behaviour.
+   *
+   * The engine is scale-invariant (everything is measured in units of the camera height C), so
+   * the value is converted through `SHADOW_CONFIG.assumedCameraHeightM` — see `objectDepthOffset()`
+   * in `lib/shadowProjection.ts`.
+   */
+  depth_cm?: number;
   is_offscreen?: boolean;      // flag for objects located outside photo frame
 }
 
@@ -61,11 +71,4 @@ export interface SceneAnnotation {
 export interface SolarPosition {
   azimuth_deg: number;   // degrees clockwise from North
   altitude_deg: number;  // degrees above horizon
-}
-
-// A rendered shadow layer for one annotation
-export interface ShadowLayer {
-  annotation_id: string;
-  shadow_polygon: Point2D[]; // projected polygon before depth warp
-  opacity: number;
 }

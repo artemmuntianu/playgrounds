@@ -1,0 +1,13 @@
+{
+  "name": "playground-portal-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local type-aware analysis/codemod tooling (ts-morph). Source code, NOT part of the app build: the app's package.json and lockfile are deliberately untouched.",
+  "scripts": {
+    "install-tools": "npm install"
+  },
+  "dependencies": {
+    "ts-morph": "^28.0.0"
+  }
+}

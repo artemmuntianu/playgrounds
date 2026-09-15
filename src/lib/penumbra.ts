@@ -17,9 +17,8 @@ export function sunPenumbraFactor(altitudeDeg: number): number {
  * Penumbra radius (destination pixels) for one projected shadow polygon.
  *
  * Softness is derived from the *projected geometry*, so it is automatically correct for the
- * photo resolution and for the time of day. `height_meters` is deliberately not used: the
- * projection already encodes it, and the former `height_meters * 0.8` formula gave every
- * annotation the same (arbitrary) blur.
+ * photo resolution and for the time of day. The removed per-object `height_meters * 0.8` formula
+ * gave every annotation the same (arbitrary) blur instead.
  *
  * `strength` is the optional per-scene operator knob (`scene_metadata.penumbra_strength`).
  */

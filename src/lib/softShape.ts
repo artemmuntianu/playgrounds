@@ -32,6 +32,13 @@ export interface SoftPolygonOptions {
   color: RGB;
   /** Blend mode used when the softened shape is composited back onto `ctx`. */
   composite: GlobalCompositeOperation;
+  /**
+   * Additional sub-paths (extra rings / triangles, same pixel & winding conventions as `polygon`)
+   * filled as part of the SAME shape. Used by the depth extrusion in `shadowProjection.ts`, where
+   * the far face and the side band of the object's volume must join the near face as one union
+   * with a single alpha instead of being painted twice (which would darken the overlap).
+   */
+  extraRings?: Point2D[][];
   /** Optional contact falloff along the shadow axis (base darker than the tip). */
   fade?: {
     fromPx: Point2D;
@@ -125,6 +132,48 @@ export function pixelBounds(points: Point2D[]): PixelBounds {
     if (p.y > maxY) maxY = p.y;
   }
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+/** Twice the signed area of a ring: > 0 = counter-clockwise in screen space. */
+function signedArea(points: Point2D[]): number {
+  let area = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    area += a.x * b.y - b.x * a.y;
+  }
+  return area;
+}
+
+/**
+ * The same ring with a guaranteed counter-clockwise winding.
+ *
+ * All sub-paths of a soft shape are filled in ONE path, and the nonzero fill rule yields their exact
+ * union only while they wind the same way — a piece wound the other way would punch a hole into the
+ * piece it overlaps.
+ */
+function withPositiveWinding(points: Point2D[]): Point2D[] {
+  return signedArea(points) < 0 ? points.slice().reverse() : points;
+}
+
+/**
+ * Appends a pixel-space polygon to the path that is already open (no `beginPath`).
+ *
+ * `paintSoftPolygon` builds one path out of several rings / triangles so their union is filled with
+ * a single alpha; `drawPolygonPath` starts that path, this function extends it.
+ */
+export function continuePolygonPath(
+  ctx: CanvasRenderingContext2D,
+  points: Point2D[],
+  offsetX: number = 0,
+  offsetY: number = 0
+): void {
+  if (points.length < 3) return;
+  ctx.moveTo(points[0].x + offsetX, points[0].y + offsetY);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i].x + offsetX, points[i].y + offsetY);
+  }
+  ctx.closePath();
 }
 
 /** Traces a pixel-space polygon on the context (no fill / no stroke). */
@@ -244,7 +293,19 @@ export function paintSoftPolygon(
 ): void {
   if (polygon.length < 3) return;
 
-  const pixels = toPixels(polygon, width, height);
+  // Every ring / triangle of the shape is filled as ONE path: the nonzero fill rule then yields the
+  // exact union with a single alpha, so overlapping pieces never darken each other. All pieces are
+  // forced to the same winding direction, otherwise their overlaps would cancel out instead.
+  const pieces: Point2D[][] = [polygon];
+  for (const ring of options.extraRings ?? []) {
+    if (ring && ring.length >= 3) pieces.push(ring);
+  }
+  const piecePixels = pieces.map((piece) => withPositiveWinding(toPixels(piece, width, height)));
+
+  const pixels: Point2D[] = [];
+  for (const piece of piecePixels) {
+    for (const point of piece) pixels.push(point);
+  }
   const bounds = pixelBounds(pixels);
   const pad = options.blurRadiusPx + 2;
 
@@ -275,7 +336,13 @@ export function paintSoftPolygon(
     shape.ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`;
   }
 
-  drawPolygonPath(shape.ctx, pixels, -ox, -oy);
+  for (let i = 0; i < piecePixels.length; i++) {
+    if (i === 0) {
+      drawPolygonPath(shape.ctx, piecePixels[i], -ox, -oy);
+    } else {
+      continuePolygonPath(shape.ctx, piecePixels[i], -ox, -oy);
+    }
+  }
   shape.ctx.fill();
 
   const soft = blurCanvas(shape.canvas, options.blurRadiusPx);

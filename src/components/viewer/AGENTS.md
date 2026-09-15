@@ -15,7 +15,9 @@ The mobile-facing front end at `/viewer`. SSR page shells + React islands.
 
 ## Rules (canonical)
 
-- This is the **ONLY** call site for `renderShadows()` and the `lib` render helpers. Keep it so.
+- This is the **ONLY** call site for `renderSegmentedScene()` (and the `lib` render
+  helpers: `segRenderer.ts`, `rain.ts`). The old `renderShadows()` /
+  `shadowRenderer.ts` path is gone — do not bring back a second renderer.
 - Cache the static frame in `staticCanvasRef`; the visible canvas re-composites it each frame plus
   the moving rain layer — never re-run the shadow/light passes per frame.
 - `isAdditional` photos have **no** shadow simulation and no scene / camera az / fov.
