@@ -301,11 +301,10 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(baseImg, 0, 0, w, h);
 
-    // Draw equipment dot-markers (shown on every photo, incl. additional).
-    drawEquipmentMarkers(ctx, w, h, equipmentMarkers);
-
     // If it is an additional photo, we don't render shadows or sun overlay
     if (isAdditional) {
+      // Draw equipment dot-markers (shown on every photo, incl. additional).
+      drawEquipmentMarkers(ctx, w, h, equipmentMarkers);
       return;
     }
 
@@ -336,6 +335,10 @@ export const ViewerShadowCanvas: React.FC<ViewerShadowCanvasProps> = ({
         meta?.penumbra_strength
       );
     }
+
+    // Draw equipment dot-markers (shown on every photo, incl. additional).
+    // Moved to the end so they appear above shadows.
+    drawEquipmentMarkers(ctx, w, h, equipmentMarkers);
 
     // Cache the composited static frame (base + shadow + light) so the rain animation can
     // composite it every frame without re-running the expensive passes.
