@@ -33,7 +33,7 @@ const OUTSIDE_TS = /\.(astro|js|mjs|cjs)$/;
 /** Documentation: a mention in a doc is NOT a reference, but it is worth reporting. */
 const DOC_FILES = /\.md$/;
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = process.cwd();
 const argv = process.argv.slice(2);
 const command = argv[0];
 
@@ -433,9 +433,130 @@ function typecheck() {
   process.exit(1);
 }
 
+function validateDocs() {
+  const constitutionPath = path.join(ROOT, 'CONSTITUTION.md');
+  const agentsPath = path.join(ROOT, 'AGENTS.md');
+  const errors = [];
+
+  if (!fs.existsSync(constitutionPath)) {
+    errors.push('Missing CONSTITUTION.md in project root');
+  }
+  if (!fs.existsSync(agentsPath)) {
+    errors.push('Missing AGENTS.md in project root');
+  } else {
+    const content = fs.readFileSync(agentsPath, 'utf8');
+    const matches = content.matchAll(/`([^`]+\/AGENTS\.md|CONSTITUTION\.md)`/g);
+    let count = 0;
+    for (const match of matches) {
+      const targetRel = match[1];
+      if (targetRel.includes('<') || targetRel.includes('>')) continue;
+      count++;
+      const fullPath = path.join(ROOT, targetRel);
+      if (!fs.existsSync(fullPath)) {
+        errors.push(`Stale/missing path in AGENTS.md architecture map: ${targetRel}`);
+      }
+    }
+    if (errors.length === 0) {
+      console.log(`analyze: Docs validation passed (${count} architecture map reference(s) verified)`);
+      return;
+    }
+  }
+
+  for (const err of errors) {
+    console.error(`analyze error: ${err}`);
+  }
+  process.exit(1);
+}
+
+function context(target) {
+  const project = createProject();
+  const sourceFile = resolveFile(project, target);
+  console.log(`=== TOKEN-EFFICIENT INTERFACE SUMMARY: ${rel(sourceFile.getFilePath())} ===`);
+  
+  const imports = sourceFile.getImportDeclarations();
+  if (imports.length > 0) {
+    console.log('\n--- IMPORTS ---');
+    for (const imp of imports) {
+      console.log(`import from '${imp.getModuleSpecifierValue()}'`);
+    }
+  }
+
+  const exported = sourceFile.getExportedDeclarations();
+  if (exported.size > 0) {
+    console.log('\n--- EXPORTED INTERFACES & SIGNATURES ---');
+    for (const [name, decls] of exported.entries()) {
+      for (const decl of decls) {
+        const kind = decl.getKindName();
+        if (kind === 'FunctionDeclaration' || kind === 'MethodDeclaration') {
+          const params = decl.getParameters().map(p => `${p.getName()}: ${p.getType().getText()}`).join(', ');
+          const returnType = decl.getReturnType().getText();
+          console.log(`export function ${name}(${params}): ${returnType}`);
+        } else if (kind === 'InterfaceDeclaration' || kind === 'TypeAliasDeclaration') {
+          console.log(`export ${kind === 'InterfaceDeclaration' ? 'interface' : 'type'} ${name}`);
+        } else if (kind === 'ClassDeclaration') {
+          console.log(`export class ${name}`);
+        } else {
+          console.log(`export const/let ${name}: ${decl.getType().getText()}`);
+        }
+      }
+    }
+  }
+}
+
+function impact(target) {
+  const project = createProject();
+  const sourceFile = resolveFile(project, target);
+  const targetRel = rel(sourceFile.getFilePath());
+  const dependents = new Set();
+
+  for (const sf of project.getSourceFiles()) {
+    if (sf.getFilePath() === sourceFile.getFilePath()) continue;
+    for (const imp of sf.getImportDeclarations()) {
+      const spec = imp.getModuleSpecifierValue();
+      if (spec.includes(path.basename(targetRel, path.extname(targetRel))) || spec.includes(targetRel)) {
+        dependents.add(rel(sf.getFilePath()));
+      }
+    }
+  }
+
+  console.log(`=== DOWNSTREAM IMPACT ANALYSIS FOR ${targetRel} ===`);
+  if (dependents.size === 0) {
+    console.log('No direct internal consumers found in TS graph.');
+  } else {
+    console.log(`Found ${dependents.size} dependent file(s) that import this module:`);
+    for (const dep of dependents) {
+      console.log(`  - ${dep}`);
+    }
+  }
+}
+
+function syntaxCheck(target) {
+  const project = createProject();
+  const sourceFile = resolveFile(project, target);
+  const diagnostics = sourceFile.getPreEmitDiagnostics();
+  if (diagnostics.length === 0) {
+    console.log(`analyze syntax-check: PASS (${rel(sourceFile.getFilePath())} is syntactically valid)`);
+  } else {
+    console.error(`analyze syntax-check: FAIL (${diagnostics.length} syntax/type error(s) in ${rel(sourceFile.getFilePath())}):`);
+    for (const diag of diagnostics) {
+      console.error(`  line ${sourceFile.getLineAndColumnAtPos(diag.getStart()).line}: ${diag.getMessageText()}`);
+    }
+    process.exit(1);
+  }
+}
+
 switch (command) {
   case 'outline':
     outline(positionals()[0]);
+    break;
+  case 'context':
+    context(positionals()[0]);
+    break;
+  case 'impact':
+    impact(positionals()[0]);
+    break;
+  case 'syntax-check':
+    syntaxCheck(positionals()[0]);
     break;
   case 'dead-exports':
     deadExports(flag('all'));
@@ -449,6 +570,9 @@ switch (command) {
   case 'typecheck':
     typecheck();
     break;
+  case 'validate-docs':
+    validateDocs();
+    break;
   case 'move-symbols':
     moveSymbols({
       from: opt('from'),
@@ -458,7 +582,7 @@ switch (command) {
     });
     break;
   default:
-    console.log('usage: node tools/analyze.mjs <outline|dead-exports|refs|imports|typecheck|move-symbols> [args]');
+    console.log('usage: node tools/analyze.mjs <outline|context|impact|syntax-check|dead-exports|refs|imports|typecheck|validate-docs|move-symbols> [args]');
     console.log('see tools/README.md for examples');
     process.exit(command ? 1 : 0);
 }

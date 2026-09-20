@@ -50,25 +50,21 @@ not satisfy them yet, so enabling them wholesale would bury the signal.
 
 ## Analysis tooling (`tools/analyze.mjs`)
 
-A type-aware (ts-morph) CLI for reference / dead-code questions and mechanical moves. It is a private
-sandbox: the app's `package.json` and lockfile are deliberately untouched. Install once per clone:
+**Mandatory Tooling Expectation**: Agents MUST use these tools during feature work, refactoring, and verification instead of reading full source files into context or doing ad-hoc text greps:
 
 ```sh
-cmd /c "cd /d tools && npm install"
-```
-
-```sh
-node tools/analyze.mjs outline <file>           # declaration map of a file (cheap way to read it)
-node tools/analyze.mjs dead-exports [--all]     # what is dead vs. framework-/Astro-referenced
-node tools/analyze.mjs refs <Symbol>            # real reference resolution, not grep
-node tools/analyze.mjs imports <module>         # who imports it, and what they pull
-node tools/analyze.mjs typecheck                # tsc diagnostics
+node tools/analyze.mjs context <file>           # interface & type summary (saves 90% tokens)
+node tools/analyze.mjs impact <file>            # downstream dependent file analysis
+node tools/analyze.mjs syntax-check <file>      # instant AST syntax check (<50ms)
+node tools/analyze.mjs validate-docs            # layer docs compliance validation
+node tools/analyze.mjs outline <file>           # declaration map of a file
+node tools/analyze.mjs refs <Symbol>            # language-service reference resolution
+node tools/analyze.mjs imports <module>         # module import consumer mapping
+node tools/analyze.mjs typecheck                # fast tsc diagnostics
 node tools/analyze.mjs move-symbols --from a.ts --to b.ts --names f,g [--write]
 ```
 
-**Use these instead of ad-hoc greps or throwaway scripts** for "who references X?", "what is dead?",
-"who imports this?", and never hand-move declarations between modules — the codemod rewires the
-importers too (dry run by default; then `--write`, then `typecheck`). Details in `tools/README.md`.
+**Use these instead of ad-hoc greps, full file reads, or throwaway scripts**. See `tools/README.md` for details.
 
 ## Known environment traps (do NOT re-investigate)
 
