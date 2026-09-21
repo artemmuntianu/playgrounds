@@ -8,6 +8,51 @@ import { drawShadowLayerToCanvas } from './shadowLayer';
 import { renderMaskedLightPasses } from './lightPasses';
 
 /**
+ * Punches the annotation polygon silhouettes out of the shadow layer using `destination-out`.
+ *
+ * Shadows are projected AWAY from the sun, but the projection geometry does not guarantee that
+ * the shadow polygon never overlaps the object's own silhouette (the near face of the prism sits
+ * exactly at the object's screen position). Without this step, the `multiply` composite darkens
+ * the photo pixels beneath the object — making it look as if the shadow is physically on top of
+ * the equipment. Erasing the silhouettes here is the canonical guard, independent of how well the
+ * segmentation mask's `vertical` category covers those objects.
+ *
+ * Only the `polygon_coordinates` (the near face / annotated silhouette) are erased, not the full
+ * projected shadow shape. Fully off-screen annotations (no vertex inside [0, 1]) are skipped.
+ */
+function eraseAnnotationSilhouettes(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  annotations: Annotation[]
+): void {
+  const prev = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = 'black'; // colour is irrelevant for destination-out; only alpha matters
+
+  for (const ann of annotations) {
+    const pts = ann.polygon_coordinates;
+    if (!pts || pts.length < 3) continue;
+
+    // Only erase silhouettes that actually intersect the frame (at least one vertex inside [0,1]).
+    const anyInFrame = pts.some(
+      (p) => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1
+    );
+    if (!anyInFrame) continue;
+
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x * width, pts[0].y * height);
+    for (let i = 1; i < pts.length; i++) {
+      ctx.lineTo(pts[i].x * width, pts[i].y * height);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = prev;
+}
+
+/**
  * Renders the full environment for one photo, respecting the semantic mask: soft shadows on the
  * ground only, a sky gradient + sun glow masked to the sky, direct sunlight on the ground and a
  * directional light on vertical objects.
@@ -68,6 +113,12 @@ export function renderSegmentedScene(
       depthMapData,
       penumbraStrength
     );
+
+    // Erase the annotation silhouettes from the shadow layer so the shadow never paints over
+    // the objects that cast it (the multiply composite would otherwise darken the objects
+    // themselves wherever the projected polygon overlaps their screen position).
+    eraseAnnotationSilhouettes(layer.ctx, width, height, annotations);
+
     layer.ctx.globalCompositeOperation = 'destination-in';
     layer.ctx.drawImage(groundMask, 0, 0, width, height);
     layer.ctx.globalCompositeOperation = 'source-over';

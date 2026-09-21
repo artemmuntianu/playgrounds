@@ -161,12 +161,18 @@ state change and cached into an offscreen `staticCanvasRef`; the visible canvas 
 composites the cache every frame plus a moving rain layer, so rain never re-runs the
 expensive shadow/light passes. Order:
 
-1. `drawImage(baseImage)`, then `drawEquipmentMarkers(...)` (markers show on every photo).
-2. `renderSegmentedScene(...)`: shadow layer (multiplied, clipped to the ground mask) ->
-   sky gradient + sun glow (sky mask) -> direct ground sunlight (ground mask) ->
+1. `drawImage(baseImage)`.
+2. `renderSegmentedScene(...)`: shadow layer (multiplied, clipped to the ground mask) →
+   sky gradient + sun glow (sky mask) → direct ground sunlight (ground mask) →
    directional vertical light (vertical mask). Skipped entirely for `isAdditional`
    photos, which get no shadows / scene camera.
-3. If `effects.rain.enabled` and `precipitation_mm > 0`: cache the static frame into
+   - **Inside the shadow layer pass**, after painting all annotation shadows and before the
+     `destination-in` groundMask clip, `eraseAnnotationSilhouettes()` punches the annotation
+     polygon silhouettes out with `destination-out`. This ensures the shadow never darkens
+     the annotated objects themselves, regardless of segmentation mask quality.
+3. `drawEquipmentMarkers(...)` — drawn **after** `renderSegmentedScene` so dot-markers appear
+   above the shadow layer.
+4. If `effects.rain.enabled` and `precipitation_mm > 0`: cache the static frame into
    `staticCanvasRef`, then run a `requestAnimationFrame` loop that clears the visible canvas,
    draws `staticCanvasRef`, then `renderRain(...)` + `renderWetGround(...)`.
 
