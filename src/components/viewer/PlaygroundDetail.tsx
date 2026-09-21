@@ -199,19 +199,19 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
   // Equipment markers for the active photo (one per equipment marker matching this photo).
   const activeMarkers: EquipmentMarkerDisplay[] = activePhoto
     ? playground.equipment.flatMap((item) =>
-        item.markers
-          .filter((m) => m.photo_id === activePhoto.id)
-          .map((m) => {
-            const label = item.custom_name?.[lang] || getEquipmentLabel(item.type)[lang];
-            return {
-              x: m.x,
-              y: m.y,
-              label,
-              category: getCategory(item.type),
-              icon: getEquipmentIcon(item.type),
-            };
-          }),
-      )
+      item.markers
+        .filter((m) => m.photo_id === activePhoto.id)
+        .map((m) => {
+          const label = item.custom_name?.[lang] || getEquipmentLabel(item.type)[lang];
+          return {
+            x: m.x,
+            y: m.y,
+            label,
+            category: getCategory(item.type),
+            icon: getEquipmentIcon(item.type),
+          };
+        }),
+    )
     : [];
   const markerCount = activeMarkers.length;
 
@@ -323,11 +323,10 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                     key={photo.id}
                     type="button"
                     onClick={() => handleSelectPhoto(photo)}
-                    className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition active:scale-95 ${
-                      isSelected
+                    className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition active:scale-95 ${isSelected
                         ? 'border-amber-500 ring-2 ring-amber-500/30 scale-105'
                         : 'border-slate-200 opacity-80 hover:opacity-100'
-                    }`}
+                      }`}
                   >
                     <img
                       src={thumbUrl}
@@ -364,11 +363,10 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                     key={i}
                     type="button"
                     onClick={() => setDayOffset(i)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition ${
-                      active
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition ${active
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
+                      }`}
                   >
                     {formatDayLabel(d, lang)}
                   </button>
@@ -393,7 +391,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
               <input
                 type="range"
                 min="480" // 08:00
-                max="1200" // 20:00
+                max="1140" // 19:00
                 step="15"
                 value={timeMinutes}
                 onChange={(e) => setTimeMinutes(Number(e.target.value))}
@@ -407,7 +405,7 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                 <span>14:00</span>
                 <span>16:00</span>
                 <span>18:00</span>
-                <span>20:00</span>
+                <span>19:00</span>
               </div>
             </div>
 
@@ -420,22 +418,20 @@ export const PlaygroundDetail: React.FC<PlaygroundDetailProps> = ({ playgroundId
                 <button
                   type="button"
                   onClick={() => setWeatherMode('live')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
-                    weatherMode === 'live'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${weatherMode === 'live'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   🌐 Live API
                 </button>
                 <button
                   type="button"
                   onClick={() => setWeatherMode('demo')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
-                    weatherMode === 'demo'
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${weatherMode === 'demo'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   🌧️ Demo (Rain 11-12)
                 </button>
